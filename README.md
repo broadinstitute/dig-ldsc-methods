@@ -1,2 +1,2 @@
 # dig-ldsc-methods
-LDSC Methods
+Houses methods and batch/lambda/Docker/etc code for the dig-job-server to call
