@@ -38,7 +38,7 @@ def p_to_z(p: float, beta: float) -> float:
 
 def valid_line(line: Dict, col_map: Dict) -> bool:
     return all([line.get(col_map[column]) is not None for column in var_id_columns]) and \
-           all([line.get(col_map[column]) is not None for column in var_id_columns]) and \
+           all([line.get(col_map[column]) is not None for column in zn_columns]) and \
            0 < float(line[col_map['pValue']]) <= 1
 
 
