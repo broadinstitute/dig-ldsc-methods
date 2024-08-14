@@ -16,7 +16,7 @@ data_path = '.'
 
 
 def download(username: str, dataset: str) -> Dict:
-    path = f'{s3_bucket}/upload/{username}/{dataset}/genetic/'
+    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/raw/'
     subprocess.check_call(f'aws s3 cp {path} dataset/ --recursive', shell=True)
     with open('dataset/metadata', 'r') as f:
         metadata = json.load(f)
@@ -89,7 +89,7 @@ def ld_rs_iter(ancestry: str) -> str:
 
 
 def upload(username: str, dataset: str, file: str):
-    path = f'{s3_bucket}/data/{username}/{dataset}/ldsc/sumstats/'
+    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/sumstats/'
     subprocess.check_call(f'aws s3 cp {file} {path}', shell=True)
 
 
