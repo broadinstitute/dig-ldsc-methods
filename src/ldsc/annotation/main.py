@@ -61,13 +61,19 @@ def run_chromosome(filename: str, dataset: str, ancestry: str, chromosome: int):
     write_annot(f'annotation/{dataset}.{ancestry}.{chromosome}.annot.gz', dataset, data, g1000_data)
 
 
+def zip_up_data(dataset: str, ancestry: str):
+    if not os.path.exists('zip'):
+        os.mkdir('zip')
+    subprocess.check_call(f'zip -j zip/annotation.{dataset}.{ancestry}.zip annotation/{dataset}.{ancestry}.*.annot.gz', shell=True)
+
+
 def upload(username: str, dataset: str):
     path = f'{s3_bucket}/userdata/{username}/annotation/{dataset}/ldsc/annotation/'
-    subprocess.check_call(f'aws s3 cp annotation/ {path} --recursive', shell=True)
+    subprocess.check_call(f'aws s3 cp zip/ {path} --recursive', shell=True)
 
 
 def clean_up():
-    for directory in ['dataset', 'annotation']:
+    for directory in ['dataset', 'annotation', 'zip']:
         if os.path.exists(directory):
             shutil.rmtree(directory)
 
@@ -82,6 +88,7 @@ def main():
     for ancestry in ['AFR', 'AMR', 'EAS', 'EUR', 'SAS']:
         for chromosome in range(1, 23):
             run_chromosome(metadata['file'], args.dataset, ancestry, chromosome)
+        zip_up_data(args.dataset, ancestry)
     upload(args.username, args.dataset)
     clean_up()
 

@@ -8,7 +8,7 @@ num_to_group = [[('A', 'C'), ('C', 'A'), ('T', 'G'), ('G', 'T')], [('A', 'G'), (
 
 def get_hapmap_set():
     out = set()
-    with open('data/snps/w_hm3.snplist', 'r') as f:
+    with open('data/hapmap/w_hm3.snplist', 'r') as f:
         f.readline()
         for line in f:
             split_line = line.strip().split('\t')
@@ -32,10 +32,10 @@ def get_g1000_map(ancestry):
     return out, rs_ids
 
 
-def make_snplist(ancestry, hapmap_set, g1000_map, rs_ids):
-    if not os.path.exists('data/snplist'):
-        os.mkdir('data/snplist')
-    with open(f'data/snplist/ldsc.{ancestry}.snplist', 'w') as f:
+def make_snpmap(ancestry, hapmap_set, g1000_map, rs_ids):
+    if not os.path.exists('data/snpmap'):
+        os.mkdir('data/snpmap')
+    with open(f'data/snpmap/sumstats.{ancestry}.snpmap', 'w') as f:
         for rs_id in rs_ids:
             if rs_id in hapmap_set and rs_id in g1000_map:
                 for var_id in g1000_map[rs_id]:
@@ -46,7 +46,7 @@ def main():
     hapmap_set = get_hapmap_set()
     for ancestry in ['AFR', 'AMR', 'EAS', 'EUR', 'SAS']:
         g1000_map, rs_ids = get_g1000_map(ancestry)
-        make_snplist(ancestry, hapmap_set, g1000_map, rs_ids)
+        make_snpmap(ancestry, hapmap_set, g1000_map, rs_ids)
 
 
 if __name__ == '__main__':
