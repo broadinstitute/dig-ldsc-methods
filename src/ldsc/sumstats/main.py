@@ -25,7 +25,7 @@ def download(username: str, dataset: str) -> Dict:
 
 def get_var_to_rs_map(ancestry: str) -> Dict:
     var_to_rs = {}
-    with open(f'{data_path}/snplist/ldsc.{ancestry}.snplist', 'r') as f:
+    with open(f'{data_path}/snpmap/sumstats.{ancestry}.snpmap', 'r') as f:
         for full_row in f.readlines():
             var_id, rs_id = full_row.strip().split('\t')
             var_to_rs[var_id] = rs_id

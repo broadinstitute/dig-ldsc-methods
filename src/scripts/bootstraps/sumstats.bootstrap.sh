@@ -1,6 +1,6 @@
 #!/bin/bash
 
-aws s3 cp s3://dig-ldsc-server/bin/snplist/ snplist/ --recursive
+aws s3 cp s3://dig-ldsc-server/bin/snpmap/ snpmap/ --recursive
 
 for ANCESTRY in AFR AMR EAS EUR SAS
 do
