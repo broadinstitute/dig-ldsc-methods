@@ -11,3 +11,7 @@ aws s3 cp s3://dig-ldsc-server/bin/hapmap/w_hm3.snplist.bz2 .
 bunzip2 w_hm3.snplist.bz2
 mkdir -p data/hapmap
 mv w_hm3.snplist data/hapmap/
+
+aws s3 cp s3://dig-analysis-data/scripts/liftover/b37toHg38.over.chain liftover/
+aws s3 cp s3://dig-analysis-data/scripts/liftover/liftOver.linux.x86_64.v287 liftover/
+aws s3 cp s3://dig-analysis-data/scripts/liftover/liftOver.macOS.arm64 liftover/
