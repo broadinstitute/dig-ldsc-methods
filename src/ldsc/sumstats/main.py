@@ -1,18 +1,18 @@
 import argparse
 import gzip
 import json
+import math
 import numpy as np
 import os
 from scipy.stats import chi2
 import shutil
 import subprocess
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 var_id_columns = ['chromosome', 'position', 'reference', 'alt']
-zn_columns = ['pValue', 'beta', 'n']
 
 s3_bucket = 's3://dig-ldsc-server'
-data_path = '.'
+data_path = '.'  # will be updated in docker or server
 
 
 def download(username: str, dataset: str) -> Dict:
@@ -23,41 +23,67 @@ def download(username: str, dataset: str) -> Dict:
     return metadata
 
 
-def get_var_to_rs_map(ancestry: str) -> Dict:
+def get_var_to_rs_map(ancestry: str, genome_build: str) -> Dict:
     var_to_rs = {}
-    with open(f'{data_path}/snpmap/sumstats.{ancestry}.snpmap', 'r') as f:
+    with open(f'{data_path}/snpmap/sumstats.{genome_build}.{ancestry}.snpmap', 'r') as f:
         for full_row in f.readlines():
             var_id, rs_id = full_row.strip().split('\t')
             var_to_rs[var_id] = rs_id
     return var_to_rs
 
 
+def get_p_value(line: Dict, col_map: Dict) -> float:
+    return float(line[col_map['pValue']])
+
+
+def get_beta(line: Dict, col_map: Dict) -> float:
+    if 'beta' in col_map:
+        return float(line[col_map['beta']])
+    else:
+        return math.log(float(line[col_map['oddsRatio']]))
+
+
+def get_n(line: Dict, col_map: Dict, effective_n: Optional[float]) -> float:
+    if effective_n is not None:
+        return effective_n
+    else:
+        return float(line[col_map['n']])
+
+
 def p_to_z(p: float, beta: float) -> float:
     return np.sqrt(chi2.isf(p, 1)) * (-1)**(beta < 0)
 
 
-def valid_line(line: Dict, col_map: Dict) -> bool:
+def valid_line(line: Dict, col_map: Dict, effective_n: Optional[float]) -> bool:
     return all([line.get(col_map[column]) is not None for column in var_id_columns]) and \
-           all([line.get(col_map[column]) is not None for column in zn_columns]) and \
+           col_map['pValue'] in line and \
+           (('beta' in col_map and col_map['beta'] in line) or ('oddsRatio' in col_map and col_map['oddsRatio'] in line)) and \
+           (('n' in col_map and col_map['n'] in line) or effective_n is not None) and \
            0 < float(line[col_map['pValue']]) <= 1
 
 
-def stream_to_data(file: str, ancestry: str, col_map: Dict) -> List:
-    var_to_rs_map = get_var_to_rs_map(ancestry)
+def stream_to_data(file: str, ancestry: str, genome_build: str, effective_n: Optional[float], col_map: Dict, separator: str) -> List:
+    var_to_rs_map = get_var_to_rs_map(ancestry, genome_build)
     out = []
     count = 0
+    error_count = 0
     with gzip.open(f'dataset/{file}', 'rt') as f_in:
-        header = f_in.readline().strip().split('\t')
+        header = f_in.readline().strip().split(separator)
         for json_string in f_in:
-            line = dict(zip(header, json_string.strip().split('\t')))
+            line = dict(zip(header, json_string.strip().split(separator)))
             count += 1
-            if valid_line(line, col_map):
+            if valid_line(line, col_map, effective_n):
                 chromosome, position, reference, alt = (line[col_map[c]] for c in var_id_columns)
                 var_id = f'{chromosome}:{position}:{reference.upper()}:{alt.upper()}'
                 if var_id in var_to_rs_map:
-                    pValue, beta, n = (line[col_map[c]] for c in zn_columns)
-                    out.append((var_to_rs_map[var_id], p_to_z(float(pValue), float(beta)), float(n)))
-    print('{} SNPs translated from a total of {}'.format(len(out), count))
+                    try:
+                        p_value = float(line[col_map['pValue']])
+                        beta = get_beta(line, col_map)
+                        n = get_n(line, col_map, effective_n)
+                        out.append((var_to_rs_map[var_id], p_to_z(p_value, beta), n))
+                    except ValueError:  # pValue, beta, or n not a value that can be converted to a float, skip
+                        error_count += 1
+    print('{} SNPs translated from a total of {} ({} skipped)'.format(len(out), count, error_count))
     return out
 
 
@@ -106,10 +132,17 @@ def main():
     args = parser.parse_args()
 
     metadata = download(args.username, args.dataset)
-    data = stream_to_data(metadata['file'], metadata['ancestry'], metadata['col_map'])
+    file = metadata['file']
+    ancestry = metadata['ancestry']
+    effective_n = metadata.get('effective_n')
+    col_map = metadata['col_map']
+    separator = metadata['separator']
+    genome_build = metadata['genome_build']
+
+    data = stream_to_data(file, ancestry, genome_build, effective_n, col_map, separator)
     if len(data) > 0:
         data_dict = filter_data_to_dict(data)
-        out_file = save_to_file(args.dataset, metadata['ancestry'], data_dict)
+        out_file = save_to_file(args.dataset, ancestry, data_dict)
         upload(args.username, args.dataset, out_file)
     clean_up()
 

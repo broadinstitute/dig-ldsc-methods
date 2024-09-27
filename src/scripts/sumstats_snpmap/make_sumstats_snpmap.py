@@ -1,4 +1,6 @@
 import os
+import re
+import subprocess
 
 
 group_to_num = {('A', 'C'): 0, ('C', 'A'): 0, ('T', 'G'): 0, ('G', 'T'): 0,
@@ -32,10 +34,34 @@ def get_g1000_map(ancestry):
     return out, rs_ids
 
 
-def make_snpmap(ancestry, hapmap_set, g1000_map, rs_ids):
+def get_liftover_g1000_map(g1000_map):
+    with open('g1000_map.bed', 'w') as f:
+        for rs_id, var_ids in g1000_map.items():
+            for var_id in var_ids:
+                chromosome, position = re.search(r'([^:]*):([^:]*):[^:]*:[^:]*', var_id).groups()
+                f.write(f'{chromosome}\t{position}\t{position}\t{rs_id}:{var_id}\n')
+    subprocess.check_call('./liftover/liftOver.macOS.arm64 g1000_map.bed liftover/b37toHg38.over.chain hg38.bed out.unmapped', shell=True)
+
+    hg38_g1000_map = {}
+    with open('hg38.bed', 'r') as f:
+        for line in f:
+            chr_hg38_chromosome, hg38_position, _, original_data = line.strip().split('\t')
+            hg38_chromosome = chr_hg38_chromosome.replace('chr', '')
+            rs_id, chromosome, position, ref, alt = re.search(r'([^:]*):([^:]*):([^:]*):([^:]*):([^:]*)', original_data).groups()
+            if hg38_chromosome == chromosome:
+                if rs_id not in hg38_g1000_map:
+                    hg38_g1000_map[rs_id] = []
+                hg38_g1000_map[rs_id].append(f'{chromosome}:{hg38_position}:{ref}:{alt}')
+    os.remove('hg38.bed')
+    os.remove('g1000_map.bed')
+    os.remove('out.unmapped')
+    return hg38_g1000_map
+
+
+def make_snpmap(genome_build, ancestry, hapmap_set, g1000_map, rs_ids):
     if not os.path.exists('data/snpmap'):
         os.mkdir('data/snpmap')
-    with open(f'data/snpmap/sumstats.{ancestry}.snpmap', 'w') as f:
+    with open(f'data/snpmap/sumstats.{genome_build}.{ancestry}.snpmap', 'w') as f:
         for rs_id in rs_ids:
             if rs_id in hapmap_set and rs_id in g1000_map:
                 for var_id in g1000_map[rs_id]:
@@ -46,7 +72,9 @@ def main():
     hapmap_set = get_hapmap_set()
     for ancestry in ['AFR', 'AMR', 'EAS', 'EUR', 'SAS']:
         g1000_map, rs_ids = get_g1000_map(ancestry)
-        make_snpmap(ancestry, hapmap_set, g1000_map, rs_ids)
+        hg38_g1000_map = get_liftover_g1000_map(g1000_map)
+        make_snpmap('GRCh37', ancestry, hapmap_set, g1000_map, rs_ids)
+        make_snpmap('GRCh38', ancestry, hapmap_set, hg38_g1000_map, rs_ids)
 
 
 if __name__ == '__main__':
