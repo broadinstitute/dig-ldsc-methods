@@ -34,6 +34,17 @@ def download(username: str, dataset: str) -> Dict:
     return metadata
 
 
+def upload(username: str, dataset: str, output: Dict) -> None:
+    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/s-ldsc/'
+    for variable_type, data in output.items():
+        file = f'{variable_type}.output.tsv'
+        with open(file, 'w') as f:
+            for line in data:
+                f.write(line)
+        subprocess.check_call(f'aws s3 cp {file} {path}', shell=True)
+        os.remove(file)
+
+
 def clean_up():
     for directory in ['dataset']:
         if os.path.exists(directory):
@@ -53,11 +64,6 @@ def main():
     chisq, sample_size, idxs = sumstats.load_sumstats(data_path, args.dataset)
     chisq, sample_size, idxs = sumstats.filter_sumstats(chisq, sample_size, idxs)
     mean_sample_size = float(np.mean(sample_size))
-
-    factor = 10
-    sample_size = sample_size * factor
-    mean_sample_size = mean_sample_size * factor
-    print(mean_sample_size)
 
     baseline_ld = inputs.get_baseline_ld(data_path, ancestry)
     baseline_variables = inputs.get_baseline_variables(data_path, ancestry)
@@ -88,10 +94,15 @@ def main():
         xty = xtx_xty.get_xty(x, y, separators)
 
         values = ldsc.get_h2(xtx, xty, overlap_matrix, parameter_snps, total_snps, mean_sample_size)
-        # TODO: Stream? Save?
+        annotation, tissue_name = tissue.split('___')
+        output = {}
         for variable, value in zip(variables, values):
-            if 'tissue_' == variable[:7]:
-                print(tissue, variable, value['enrichment'], value['pValue'])
+            variable_type, variable_name = variable.split('___')
+            if variable_type not in output:
+                output[variable_type] = []
+            line = f'{annotation}\t{tissue_name}\t{variable_name}\t{value['enrichment']}\t{value['pValue']}\n'
+            output[variable_type].append(line)
+        upload(args.username, args.dataset, output)
         clean_up()
 
 

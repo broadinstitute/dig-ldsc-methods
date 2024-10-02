@@ -6,7 +6,6 @@ from typing import List
 def get_weight(g1000_ld: npt.NDArray, l_hm3: npt.NDArray, sample_size: npt.NDArray, chisq: npt.NDArray, parameter_snps: npt.NDArray) -> npt.NDArray:
     g1000_ld_sum = np.sum(g1000_ld, axis=1, keepdims=True)
     tau = (np.mean(chisq) - 1) / np.mean(np.multiply(g1000_ld_sum, sample_size))
-    print(tau)
 
     safe_g1000_ld_sum = np.fmax(g1000_ld_sum, 1.0)
     safe_tau = min(max(tau, 0.0), 1.0 / np.sum(parameter_snps))
@@ -14,7 +13,6 @@ def get_weight(g1000_ld: npt.NDArray, l_hm3: npt.NDArray, sample_size: npt.NDArr
 
     heteroskedasticity_weight = 1.0 / (1 + safe_tau * sample_size * safe_g1000_ld_sum)**2
     over_counting_weight = 1.0 / safe_l_hm3
-    print(np.mean(over_counting_weight), np.mean(heteroskedasticity_weight))
     unnormalized_weight = np.sqrt(heteroskedasticity_weight * over_counting_weight)
     return unnormalized_weight / np.sum(unnormalized_weight)
 
