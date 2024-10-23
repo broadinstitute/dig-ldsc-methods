@@ -13,8 +13,8 @@ data_path = os.environ.get('DATA_PATH', '.')
 
 def get_all_tissues(ancestry: str) -> List[str]:
     tissues = set()
-    for tissue_path in glob.glob(f'inputs/{ancestry}/tissue/tissue_ld.*___*.{ancestry}.npy'):
-        tissue = re.findall(f'inputs/{ancestry}/tissue/tissue_ld.(.*).{ancestry}.npy', tissue_path)[0]
+    for tissue_path in glob.glob(f'{data_path}/inputs/{ancestry}/tissue/tissue_ld.*___*.{ancestry}.npy'):
+        tissue = re.findall(f'{data_path}/inputs/{ancestry}/tissue/tissue_ld.(.*).{ancestry}.npy', tissue_path)[0]
         tissues |= {tissue}
     return sorted(tissues)
 
