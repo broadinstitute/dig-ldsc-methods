@@ -56,14 +56,12 @@ def run_chromosome(filename: str, dataset: str, ancestry: str, chromosome: int):
     data = get_file_data(filename, chromosome)
     g1000_data = get_g1000_data(ancestry, chromosome)
 
-    if not os.path.exists('annotation'):
-        os.mkdir('annotation')
+    os.makedirs(f'annotation/', exist_ok=True)
     write_annot(f'annotation/{dataset}.{ancestry}.{chromosome}.annot.gz', dataset, data, g1000_data)
 
 
 def zip_up_data(dataset: str, ancestry: str):
-    if not os.path.exists('zip'):
-        os.mkdir('zip')
+    os.makedirs(f'zip/', exist_ok=True)
     subprocess.check_call(f'zip -j zip/annotation.{dataset}.{ancestry}.zip annotation/{dataset}.{ancestry}.*.annot.gz', shell=True)
 
 

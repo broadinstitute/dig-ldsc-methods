@@ -69,29 +69,23 @@ def get_tissue_ld_score(tissue: str, ancestry: str) -> npt.NDArray:
     return np.array(output)
 
 def save_baseline_data(ancestry: str, ld: npt.NDArray, variables: List, parameter_snps: npt.NDArray) -> None:
-    if not os.path.exists('inputs'):
-        os.mkdir('inputs')
-    if not os.path.exists('inputs/baseline'):
-        os.mkdir('inputs/baseline')
-    np.save(f'inputs/baseline/baseline_ld.{ancestry}.npy', ld)
-    with open(f'inputs/baseline/baseline_variables.{ancestry}.txt', 'w') as f:
+    os.makedirs(f'inputs/{ancestry}/baseline/', exist_ok=True)
+    np.save(f'inputs/{ancestry}/baseline/baseline_ld.{ancestry}.npy', ld)
+    with open(f'inputs/{ancestry}/baseline/baseline_variables.{ancestry}.txt', 'w') as f:
         f.write('\t'.join(variables))
-    np.save(f'inputs/baseline/baseline_parameter_snps.{ancestry}.npy', parameter_snps)
+    np.save(f'inputs/{ancestry}/baseline/baseline_parameter_snps.{ancestry}.npy', parameter_snps)
 
 
 def save_tissue_data(tissue: str, ancestry: str, ld: npt.NDArray, variables: List, parameter_snps: npt.NDArray) -> None:
-    if not os.path.exists('inputs'):
-        os.mkdir('inputs')
-    if not os.path.exists(f'inputs/tissue'):
-        os.mkdir(f'inputs/tissue')
-    np.save(f'inputs/tissue/tissue_ld.{tissue}.{ancestry}.npy', ld)
-    with open(f'inputs/tissue/tissue_variables.{tissue}.{ancestry}.txt', 'w') as f:
+    os.makedirs(f'inputs/{ancestry}/tissue/', exist_ok=True)
+    np.save(f'inputs/{ancestry}/tissue/tissue_ld.{tissue}.{ancestry}.npy', ld)
+    with open(f'inputs/{ancestry}/tissue/tissue_variables.{tissue}.{ancestry}.txt', 'w') as f:
         f.write('\t'.join(variables))
-    np.save(f'inputs/tissue/tissue_parameter_snps.{tissue}.{ancestry}.npy', parameter_snps)
+    np.save(f'inputs/{ancestry}/tissue/tissue_parameter_snps.{tissue}.{ancestry}.npy', parameter_snps)
 
 
 def main():
-    for ancestry in ['SAS']:
+    for ancestry in ['AFR', 'AMR', 'EAS', 'EUR', 'SAS']:
         baseline_ld = get_baseline_ld_score(ancestry)
         baseline_variables = get_baseline_variables(ancestry)
         baseline_parameter_snps = get_baseline_parameter_snps(ancestry)
@@ -99,7 +93,6 @@ def main():
 
         for tissue_path in glob.glob(f'tissue/{ancestry}/*'):
             tissue = re.findall(f'tissue/{ancestry}/(.*)', tissue_path)[0]
-            print(tissue)
             tissue_ld = get_tissue_ld_score(tissue, ancestry)
             tissue_variables = get_tissue_variables(tissue, ancestry)
             tissue_parameter_snps = get_tissue_parameter_snps(tissue, ancestry)

@@ -59,8 +59,7 @@ def get_liftover_g1000_map(g1000_map):
 
 
 def make_snpmap(genome_build, ancestry, hapmap_set, g1000_map, rs_ids):
-    if not os.path.exists('data/snpmap'):
-        os.mkdir('data/snpmap')
+    os.makedirs(f'data/snpmap/', exist_ok=True)
     with open(f'data/snpmap/sumstats.{genome_build}.{ancestry}.snpmap', 'w') as f:
         for rs_id in rs_ids:
             if rs_id in hapmap_set and rs_id in g1000_map:

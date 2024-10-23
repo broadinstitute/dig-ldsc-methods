@@ -124,8 +124,7 @@ def get_left_right_pairs(left_cm: List, right_cm: List, window_cm: float = 1.0) 
 
 
 def write_ldscore(dataset: str, ancestry: str, chromosome: int, ldscores: List, rs_positions: List) -> None:
-    if not os.path.exists('data/ldscore'):
-        os.mkdir('data/ldscore')
+    os.makedirs(f'data/ldscore/', exist_ok=True)
     with gzip.open(f'data/ldscore/{dataset}.{ancestry}.{chromosome}.l2.ldscore.gz', 'w') as f:
         f.write(b'CHR\tSNP\tBP\tL2\n')
         for (rs_id, position), ldscore in zip(rs_positions, ldscores):
@@ -176,8 +175,7 @@ def run(dataset: str, ancestry: str, chromosome: str) -> None:
 
 
 def zip_up_data(dataset: str, ancestry: str) -> None:
-    if not os.path.exists('data/zip'):
-        os.mkdir('data/zip')
+    os.makedirs(f'data/zip/', exist_ok=True)
     annotations = f'data/annotation/{dataset}.{ancestry}.*.annot.gz'
     ldscores = f'data/ldscore/{dataset}.{ancestry}.*.l2.*'
     subprocess.check_call(f'zip -j data/zip/ldscore.{dataset}.{ancestry}.zip {annotations} {ldscores}', shell=True)

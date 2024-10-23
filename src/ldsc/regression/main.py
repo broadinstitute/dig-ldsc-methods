@@ -1,67 +1,44 @@
-import argparse
 import glob
 import json
 import numpy as np
 import os
 import re
-import shutil
-import subprocess
 from typing import Dict, List
 
 import inputs, ldsc, sumstats, weights, xtx_xty
 
 MAX_BLOCKS = 200
-
-s3_bucket = 's3://dig-ldsc-server'
-data_path = '.'
+data_path = os.environ.get('DATA_PATH', '.')
 
 
 def get_all_tissues(ancestry: str) -> List[str]:
     tissues = set()
-    for tissue_path in glob.glob(f'tissue/tissue_ld.*___*.{ancestry}.npy'):
-        tissue = re.findall(f'tissue/tissue_ld.(.*).{ancestry}.npy', tissue_path)[0]
+    for tissue_path in glob.glob(f'inputs/{ancestry}/tissue/tissue_ld.*___*.{ancestry}.npy'):
+        tissue = re.findall(f'inputs/{ancestry}/tissue/tissue_ld.(.*).{ancestry}.npy', tissue_path)[0]
         tissues |= {tissue}
     return sorted(tissues)
 
 
-def download(username: str, dataset: str) -> Dict:
-    file = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/sumstats/{dataset}.sumstats.gz'
-    metadata = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/raw/metadata'
-    subprocess.check_call(f'aws s3 cp {file} dataset/', shell=True)
-    subprocess.check_call(f'aws s3 cp {metadata} dataset/', shell=True)
+def get_metadata():
     with open('dataset/metadata', 'r') as f:
         metadata = json.load(f)
     return metadata
 
 
-def upload(username: str, dataset: str, output: Dict) -> None:
-    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/s-ldsc/'
+def save_data(output: Dict) -> None:
+    os.makedirs(f'regression/', exist_ok=True)
     for variable_type, data in output.items():
-        file = f'{variable_type}.output.tsv'
+        file = f'regression/{variable_type}.output.tsv'
         with open(file, 'w') as f:
             for line in data:
                 f.write(line)
-        subprocess.check_call(f'aws s3 cp {file} {path}', shell=True)
-        os.remove(file)
 
 
-def clean_up():
-    for directory in ['dataset']:
-        if os.path.exists(directory):
-            shutil.rmtree(directory)
-
-
-# For now only coming from the sumstats direction, so a single sumstats and will run against all annotations
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--username', default=None, required=True, type=str)
-    parser.add_argument('--dataset', default=None, required=True, type=str)
-    args = parser.parse_args()
-
-    metadata = download(args.username, args.dataset)
+    metadata = get_metadata()
     ancestry = metadata['ancestry']
 
-    chisq, sample_size, idxs = sumstats.load_sumstats(data_path, args.dataset)
+    chisq, sample_size, idxs = sumstats.load_sumstats(data_path)
     chisq, sample_size, idxs = sumstats.filter_sumstats(chisq, sample_size, idxs)
     mean_sample_size = float(np.mean(sample_size))
 
@@ -79,6 +56,7 @@ def main():
     intercept = xtx_xty.get_intercept(baseline_sumstats_ld.shape[0], baseline_weights)
     y = xtx_xty.get_y(chisq, baseline_weights)
 
+    output = {}
     for tissue in get_all_tissues(ancestry):
         overlap_matrix = inputs.get_overlap(data_path, tissue, ancestry)
         total_snps = overlap_matrix[0][0]
@@ -95,15 +73,13 @@ def main():
 
         values = ldsc.get_h2(xtx, xty, overlap_matrix, parameter_snps, total_snps, mean_sample_size)
         annotation, tissue_name = tissue.split('___')
-        output = {}
         for variable, value in zip(variables, values):
             variable_type, variable_name = variable.split('___')
             if variable_type not in output:
                 output[variable_type] = []
-            line = f'{annotation}\t{tissue_name}\t{variable_name}\t{value['enrichment']}\t{value['pValue']}\n'
+            line = f'{annotation}\t{tissue_name}\t{variable_name}\t{value["enrichment"]}\t{value["pValue"]}\n'
             output[variable_type].append(line)
-        upload(args.username, args.dataset, output)
-        clean_up()
+    save_data(output)
 
 
 if __name__ == '__main__':
