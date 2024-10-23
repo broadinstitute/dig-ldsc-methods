@@ -1,14 +1,16 @@
 #!/bin/bash
 
-aws s3 cp s3://dig-ldsc-server/bin/regression_inputs/baseline_regression_inputs.zip baseline/
-unzip baseline/baseline_regression_inputs.zip -d baseline/
-rm baseline/baseline_regression_inputs.zip
+for ANCESTRY in AFR AMR EAS EUR SAS
+do
+  aws s3 cp s3://dig-ldsc-server/bin/regression_inputs/regression_inputs.${ANCESTRY}.zip inputs/
+  unzip inputs/regression_inputs.${ANCESTRY}.zip -d inputs/${ANCESTRY}/
+  rm inputs/regression_inputs.${ANCESTRY}.zip
+done
 
-# only EUR for now
-aws s3 cp s3://dig-ldsc-server/bin/regression_inputs/tissue_regression_inputs_EUR.zip tissue/
-unzip tissue/tissue_regression_inputs_EUR.zip -d tissue/
-rm tissue/tissue_regression_inputs_EUR.zip
-
-aws s cp s3://dig-ldsc-server/bin/regression_inputs/overlap.zip overlap/
-unzip overlap/overlap.zip -d overlap/
-rm overlap/overlap.zip
+for ANCESTRY in AFR AMR EAS EUR SAS
+do
+  mkdir -p ./weights/$ANCESTRY
+  aws s3 cp s3://dig-ldsc-server/bin/weights/weights_$ANCESTRY.zip ./
+  unzip weights_$ANCESTRY.zip -d ./weights/$ANCESTRY/
+  rm weights_$ANCESTRY.zip
+done

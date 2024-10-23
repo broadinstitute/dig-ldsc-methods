@@ -45,7 +45,7 @@ def run_baseline_overlap(ancestry: str) -> None:
                     values = line.strip().split('\t')[4:]
                     np_array = np.array([list(map(float, values))])
                     output += np_array.T.dot(np_array)
-    save_overlap(f'overlap.baseline.{ancestry}.npy', output)
+    save_overlap(f'overlap.baseline.{ancestry}.npy', ancestry, output)
 
 
 def run_tissue_overlap(file: str) -> None:
@@ -69,19 +69,18 @@ def run_tissue_overlap(file: str) -> None:
                     tissue_np_array = np.array([list(map(float, tissue_values))])
                     baseline_tissue_output += baseline_np_array.T.dot(tissue_np_array)
                     tissue_output += tissue_np_array.T.dot(tissue_np_array)
-    save_overlap(f'overlap.baseline.{tissue}.{ancestry}.npy', baseline_tissue_output)
-    save_overlap(f'overlap.{tissue}.{ancestry}.npy', tissue_output)
+    save_overlap(f'overlap.baseline.{tissue}.{ancestry}.npy', ancestry, baseline_tissue_output)
+    save_overlap(f'overlap.{tissue}.{ancestry}.npy', ancestry, tissue_output)
 
 
 
-def save_overlap(file: str, overlap: npt.NDArray) -> None:
-    if not os.path.exists('datasets'):
-        os.mkdir('datasets')
-    np.save(f'datasets/{file}', overlap)
+def save_overlap(file: str, ancestry: str, overlap: npt.NDArray) -> None:
+    os.makedirs(f'inputs/{ancestry}/overlap/', exist_ok=True)
+    np.save(f'inputs/{ancestry}/overlap/{file}', overlap)
 
 
 def main():
-    for ancestry in ['EAS', 'SAS']:
+    for ancestry in ['AFR', 'AMR', 'EAS', 'EUR', 'SAS']:
         run_baseline_overlap(ancestry)
         with Pool(10) as p:
             p.map(run_tissue_overlap, glob.glob(f'tissue/{ancestry}/*'))

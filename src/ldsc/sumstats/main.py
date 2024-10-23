@@ -1,23 +1,16 @@
-import argparse
 import gzip
 import json
 import math
 import numpy as np
 import os
 from scipy.stats import chi2
-import shutil
-import subprocess
 from typing import List, Dict, Optional
 
 var_id_columns = ['chromosome', 'position', 'reference', 'alt']
-
-s3_bucket = 's3://dig-ldsc-server'
-data_path = '.'  # will be updated in docker or server
+data_path = os.environ.get('DATA_PATH', '.')
 
 
-def download(username: str, dataset: str) -> Dict:
-    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/raw/'
-    subprocess.check_call(f'aws s3 cp {path} dataset/ --recursive', shell=True)
+def get_metadata():
     with open('dataset/metadata', 'r') as f:
         metadata = json.load(f)
     return metadata
@@ -92,10 +85,9 @@ def filter_data_to_dict(data: List) -> Dict:
     return {d[0]: (d[1], d[2]) for d in data if d[2] >= N90 / 1.5}
 
 
-def save_to_file(dataset: str, ancestry: str, data: Dict) -> str:
-    if not os.path.exists('sumstats'):
-        os.mkdir('sumstats')
-    out_file = f'sumstats/{dataset}.sumstats.gz'
+def save_to_file(ancestry: str, data: Dict) -> None:
+    os.makedirs(f'sumstats/', exist_ok=True)
+    out_file = f'sumstats/output.sumstats.gz'
     with gzip.open(out_file, 'wt') as f:
         f.write('SNP\tZ\tN\n')
         for rs_id in ld_rs_iter(ancestry):
@@ -103,7 +95,6 @@ def save_to_file(dataset: str, ancestry: str, data: Dict) -> str:
                 f.write('{}\t{}\t{}\n'.format(rs_id, round(data[rs_id][0], 3), data[rs_id][1]))
             else:
                 f.write(f'{rs_id}\t\t\n')
-    return out_file
 
 
 def ld_rs_iter(ancestry: str) -> str:
@@ -114,24 +105,8 @@ def ld_rs_iter(ancestry: str) -> str:
                 yield line.strip().split('\t')[1]
 
 
-def upload(username: str, dataset: str, file: str):
-    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/sumstats/'
-    subprocess.check_call(f'aws s3 cp {file} {path}', shell=True)
-
-
-def clean_up():
-    for directory in ['dataset', 'sumstats']:
-        if os.path.exists(directory):
-            shutil.rmtree(directory)
-
-
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--username', default=None, required=True, type=str)
-    parser.add_argument('--dataset', default=None, required=True, type=str)
-    args = parser.parse_args()
-
-    metadata = download(args.username, args.dataset)
+    metadata = get_metadata()
     file = metadata['file']
     ancestry = metadata['ancestry']
     effective_n = metadata.get('effective_n')
@@ -142,9 +117,7 @@ def main():
     data = stream_to_data(file, ancestry, genome_build, effective_n, col_map, separator)
     if len(data) > 0:
         data_dict = filter_data_to_dict(data)
-        out_file = save_to_file(args.dataset, ancestry, data_dict)
-        upload(args.username, args.dataset, out_file)
-    clean_up()
+        save_to_file(ancestry, data_dict)
 
 
 if __name__ == '__main__':

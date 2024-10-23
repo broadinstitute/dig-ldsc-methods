@@ -4,39 +4,39 @@ from typing import List
 
 
 def baseline_ld_path(data_path: str, ancestry: str) -> str:
-    return f'{data_path}/baseline/baseline_ld.{ancestry}.npy'
+    return f'{data_path}/inputs/{ancestry}/baseline/baseline_ld.{ancestry}.npy'
 
 
 def baseline_variable_path(data_path: str, ancestry: str) -> str:
-    return f'{data_path}/baseline/baseline_variables.{ancestry}.txt'
+    return f'{data_path}/inputs/{ancestry}/baseline/baseline_variables.{ancestry}.txt'
 
 
 def baseline_parameter_snps_path(data_path: str, ancestry: str) -> str:
-    return f'{data_path}/baseline/baseline_parameter_snps.{ancestry}.npy'
+    return f'{data_path}/inputs/{ancestry}/baseline/baseline_parameter_snps.{ancestry}.npy'
 
 
 def tissue_ld_path(data_path: str, tissue: str, ancestry: str) -> str:
-    return f'{data_path}/tissue/tissue_ld.{tissue}.{ancestry}.npy'
+    return f'{data_path}/inputs/{ancestry}/tissue/tissue_ld.{tissue}.{ancestry}.npy'
 
 
 def tissue_variable_path(data_path: str, tissue: str, ancestry: str) -> str:
-    return f'{data_path}/tissue/tissue_variables.{tissue}.{ancestry}.txt'
+    return f'{data_path}/inputs/{ancestry}/tissue/tissue_variables.{tissue}.{ancestry}.txt'
 
 
 def tissue_parameter_snps_path(data_path: str, tissue: str, ancestry: str) -> str:
-    return f'{data_path}/tissue/tissue_parameter_snps.{tissue}.{ancestry}.npy'
+    return f'{data_path}/inputs/{ancestry}/tissue/tissue_parameter_snps.{tissue}.{ancestry}.npy'
 
 
 def overlap_path(data_path: str, ancestry: str) -> str:
-    return f'{data_path}/overlap/overlap.baseline.{ancestry}.npy'
+    return f'{data_path}/inputs/{ancestry}/overlap/overlap.baseline.{ancestry}.npy'
 
 
 def overlap_tissue_path(data_path: str, tissue: str, ancestry: str) -> str:
-    return f'{data_path}/overlap/overlap.{tissue}.{ancestry}.npy'
+    return f'{data_path}/inputs/{ancestry}/overlap/overlap.{tissue}.{ancestry}.npy'
 
 
 def overlap_tissue_baseline_path(data_path: str, tissue: str, ancestry: str) -> str:
-    return f'{data_path}/overlap/overlap.baseline.{tissue}.{ancestry}.npy'
+    return f'{data_path}/inputs/{ancestry}/overlap/overlap.baseline.{tissue}.{ancestry}.npy'
 
 
 def get_baseline_ld(data_path: str, ancestry: str) -> npt.NDArray:

@@ -3,16 +3,16 @@ import numpy as np
 from numpy import typing as npt
 
 
-def dataset_path(data_path: str, dataset: str) -> str:
-    return f'{data_path}/dataset/{dataset}.sumstats.gz'
+def dataset_path(data_path: str) -> str:
+    return f'{data_path}/dataset/input.sumstats.gz'
 
 
-def load_sumstats(data_path: str, dataset: str) -> (npt.NDArray, npt.NDArray, npt.NDArray):
+def load_sumstats(data_path: str) -> (npt.NDArray, npt.NDArray, npt.NDArray):
     idxs = []
     z = []
     n = []
     snps = []
-    with gzip.open(dataset_path(data_path, dataset), 'rt') as f:
+    with gzip.open(dataset_path(data_path), 'rt') as f:
         _ = f.readline()  # header
         for i, line in enumerate(f):
             split_line = line.strip().split('\t')
