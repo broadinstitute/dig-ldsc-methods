@@ -1,3 +1,4 @@
+import argparse
 import gzip
 import json
 import math
@@ -7,18 +8,18 @@ from scipy.stats import chi2
 from typing import List, Dict, Optional
 
 var_id_columns = ['chromosome', 'position', 'reference', 'alt']
-data_path = os.environ.get('DATA_PATH', '.')
+input_path = os.environ['INPUT_PATH']
 
 
-def get_metadata():
-    with open('dataset/metadata', 'r') as f:
+def get_metadata(data_path: str) -> Dict:
+    with open(f'{data_path}/dataset/metadata', 'r') as f:
         metadata = json.load(f)
     return metadata
 
 
 def get_var_to_rs_map(ancestry: str, genome_build: str) -> Dict:
     var_to_rs = {}
-    with open(f'{data_path}/snpmap/sumstats.{genome_build}.{ancestry}.snpmap', 'r') as f:
+    with open(f'{input_path}/snpmap/sumstats.{genome_build}.{ancestry}.snpmap', 'r') as f:
         for full_row in f.readlines():
             var_id, rs_id = full_row.strip().split('\t')
             var_to_rs[var_id] = rs_id
@@ -55,12 +56,12 @@ def valid_line(line: Dict, col_map: Dict, effective_n: Optional[float]) -> bool:
            0 < float(line[col_map['pValue']]) <= 1
 
 
-def stream_to_data(file: str, ancestry: str, genome_build: str, effective_n: Optional[float], col_map: Dict, separator: str) -> List:
+def stream_to_data(data_path: str, file: str, ancestry: str, genome_build: str, effective_n: Optional[float], col_map: Dict, separator: str) -> List:
     var_to_rs_map = get_var_to_rs_map(ancestry, genome_build)
     out = []
     count = 0
     error_count = 0
-    with gzip.open(f'dataset/{file}', 'rt') as f_in:
+    with gzip.open(f'{data_path}/dataset/{file}', 'rt') as f_in:
         header = f_in.readline().strip().split(separator)
         for json_string in f_in:
             line = dict(zip(header, json_string.strip().split(separator)))
@@ -85,9 +86,9 @@ def filter_data_to_dict(data: List) -> Dict:
     return {d[0]: (d[1], d[2]) for d in data if d[2] >= N90 / 1.5}
 
 
-def save_to_file(ancestry: str, data: Dict) -> None:
-    os.makedirs(f'sumstats/', exist_ok=True)
-    out_file = f'sumstats/output.sumstats.gz'
+def save_to_file(data_path: str, ancestry: str, data: Dict, metadata: Dict) -> None:
+    os.makedirs(f'{data_path}/output/', exist_ok=True)
+    out_file = f'{data_path}/output/output.sumstats.gz'
     with gzip.open(out_file, 'wt') as f:
         f.write('SNP\tZ\tN\n')
         for rs_id in ld_rs_iter(ancestry):
@@ -95,18 +96,24 @@ def save_to_file(ancestry: str, data: Dict) -> None:
                 f.write('{}\t{}\t{}\n'.format(rs_id, round(data[rs_id][0], 3), data[rs_id][1]))
             else:
                 f.write(f'{rs_id}\t\t\n')
+    with open(f'{data_path}/output/metadata', 'w') as f:
+        json.dump(metadata, f)
 
 
 def ld_rs_iter(ancestry: str) -> str:
     for CHR in range(1, 23):
-        with gzip.open(f'{data_path}/weights/{ancestry}/weights.{CHR}.l2.ldscore.gz', 'rt') as f:
+        with gzip.open(f'{input_path}/weights/{ancestry}/weights.{CHR}.l2.ldscore.gz', 'rt') as f:
             _ = f.readline()
             for line in f:
                 yield line.strip().split('\t')[1]
 
 
 def main():
-    metadata = get_metadata()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dir', default=None, required=True, type=str)
+    data_path = parser.parse_args().dir
+
+    metadata = get_metadata(data_path)
     file = metadata['file']
     ancestry = metadata['ancestry']
     effective_n = metadata.get('effective_n')
@@ -114,10 +121,10 @@ def main():
     separator = metadata['separator']
     genome_build = metadata['genome_build']
 
-    data = stream_to_data(file, ancestry, genome_build, effective_n, col_map, separator)
+    data = stream_to_data(data_path, file, ancestry, genome_build, effective_n, col_map, separator)
     if len(data) > 0:
         data_dict = filter_data_to_dict(data)
-        save_to_file(ancestry, data_dict)
+        save_to_file(data_path, ancestry, data_dict, metadata)
 
 
 if __name__ == '__main__':

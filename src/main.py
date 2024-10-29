@@ -1,45 +1,32 @@
 import argparse
 import os
-import shutil
 import subprocess
+import tempfile
 
 s3_bucket = os.environ['S3_BUCKET']
+input_path = os.environ['INPUT_PATH']
 
 
-def download_sumstats(username: str, dataset: str) -> None:
+def download_sumstats(username: str, dataset: str, tmp_dir: str) -> None:
     path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/raw/'
-    subprocess.check_call(f'aws s3 cp {path} ldsc/sumstats/dataset/ --recursive', shell=True)
+    subprocess.check_call(f'aws s3 cp {path} {tmp_dir}/dataset/ --recursive', shell=True)
 
 
-def download_regression(username: str, dataset: str) -> None:
+def download_regression(username: str, dataset: str, tmp_dir: str) -> None:
     file = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/sumstats/{dataset}.sumstats.gz'
-    metadata = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/raw/metadata'
-    subprocess.check_call(f'aws s3 cp {file} ldsc/regression/dataset/input.sumstats.gz', shell=True)
-    subprocess.check_call(f'aws s3 cp {metadata} ldsc/regression/dataset/', shell=True)
+    metadata = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/sumstats/metadata'
+    subprocess.check_call(f'aws s3 cp {file} {tmp_dir}/dataset/input.sumstats.gz', shell=True)
+    subprocess.check_call(f'aws s3 cp {metadata} {tmp_dir}/dataset/', shell=True)
 
 
-def upload_sumstats(username: str, dataset: str):
-    file = 'ldsc/sumstats/sumstats/output.sumstats.gz'
-    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/sumstats/{dataset}.sumstats.gz'
-    subprocess.check_call(f'aws s3 cp {file} {path}', shell=True)
+def upload_sumstats(username: str, dataset: str, tmp_dir: str) -> None:
+    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/sumstats/'
+    subprocess.check_call(f'aws s3 cp {tmp_dir}/output/ {path} --recursive', shell=True)
 
 
-def upload_regression(username: str, dataset: str) -> None:
+def upload_regression(username: str, dataset: str, tmp_dir: str) -> None:
     path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/s-ldsc/'
-    files = f'ldsc/regression/regression/'
-    subprocess.check_call(f'aws s3 cp {files} {path} --recursive', shell=True)
-
-
-def clean_up_sumstats():
-    for directory in ['ldsc/sumstats/dataset', 'ldsc/sumstats/sumstats']:
-        if os.path.exists(directory):
-            shutil.rmtree(directory)
-
-
-def clean_up_regression():
-    for directory in ['ldsc/regression/dataset', 'ldsc/regression/regression']:
-        if os.path.exists(directory):
-            shutil.rmtree(directory)
+    subprocess.check_call(f'aws s3 cp {tmp_dir}/output/ {path} --recursive', shell=True)
 
 
 def main():
@@ -49,16 +36,16 @@ def main():
     parser.add_argument('--method', default=None, required=True, type=str)
     args = parser.parse_args()
 
+    tmp = tempfile.TemporaryDirectory()
     if args.method == 'sumstats':
-        download_sumstats(args.username, args.dataset)
-        subprocess.check_call(['python3.8', 'main.py'], cwd='ldsc/sumstats/')
-        upload_sumstats(args.username, args.dataset)
-        clean_up_sumstats()
+        download_sumstats(args.username, args.dataset, tmp.name)
+        subprocess.check_call(['python3.8', 'main.py', f'--dir={tmp.name}'], cwd='ldsc/sumstats/')
+        upload_sumstats(args.username, args.dataset, tmp.name)
     if args.method == 'regression':
-        download_regression(args.username, args.dataset)
-        subprocess.check_call(['python3.8', 'main.py'], cwd='ldsc/regression/')
-        upload_regression(args.username, args.dataset)
-        clean_up_regression()
+        download_regression(args.username, args.dataset, tmp.name)
+        subprocess.check_call(['python3.8', 'main.py', f'--dir={tmp.name}'], cwd='ldsc/regression/')
+        upload_regression(args.username, args.dataset, tmp.name)
+    tmp.cleanup()
 
 
 if __name__ == '__main__':
