@@ -21,7 +21,7 @@ def get_all_tissues(ancestry: str) -> List[str]:
 
 
 def get_metadata(data_path: str) -> Dict:
-    with open(f'{data_path}/dataset/metadata', 'r') as f:
+    with open(f'{data_path}/sumstats/metadata', 'r') as f:
         metadata = json.load(f)
     return metadata
 
@@ -32,13 +32,13 @@ def get_version(ancestry):
 
 
 def save_data(output: Dict, metadata: Dict, data_path: str) -> None:
-    os.makedirs(f'{data_path}/output/', exist_ok=True)
+    os.makedirs(f'{data_path}/sldsc/', exist_ok=True)
     for variable_type, data in output.items():
-        file = f'{data_path}/output/{variable_type}.output.tsv'
+        file = f'{data_path}/sldsc/{variable_type}.output.tsv'
         with open(file, 'w') as f:
             for line in data:
                 f.write(line)
-    with open(f'{data_path}/output/metadata', 'w') as f:
+    with open(f'{data_path}/sldsc/metadata', 'w') as f:
         metadata['version'] = get_version(metadata['ancestry'])
         json.dump(metadata, f)
 
