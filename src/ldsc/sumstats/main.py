@@ -12,7 +12,7 @@ input_path = os.environ['INPUT_PATH']
 
 
 def get_metadata(data_path: str) -> Dict:
-    with open(f'{data_path}/dataset/metadata', 'r') as f:
+    with open(f'{data_path}/raw/metadata', 'r') as f:
         metadata = json.load(f)
     return metadata
 
@@ -61,7 +61,7 @@ def stream_to_data(data_path: str, file: str, ancestry: str, genome_build: str, 
     out = []
     count = 0
     error_count = 0
-    with gzip.open(f'{data_path}/dataset/{file}', 'rt') as f_in:
+    with gzip.open(f'{data_path}/raw/{file}', 'rt') as f_in:
         header = f_in.readline().strip().split(separator)
         for json_string in f_in:
             line = dict(zip(header, json_string.strip().split(separator)))
@@ -87,8 +87,8 @@ def filter_data_to_dict(data: List) -> Dict:
 
 
 def save_to_file(data_path: str, ancestry: str, data: Dict, metadata: Dict) -> None:
-    os.makedirs(f'{data_path}/output/', exist_ok=True)
-    out_file = f'{data_path}/output/output.sumstats.gz'
+    os.makedirs(f'{data_path}/sumstats/', exist_ok=True)
+    out_file = f'{data_path}/sumstats/ldsc.sumstats.gz'
     with gzip.open(out_file, 'wt') as f:
         f.write('SNP\tZ\tN\n')
         for rs_id in ld_rs_iter(ancestry):
@@ -96,7 +96,7 @@ def save_to_file(data_path: str, ancestry: str, data: Dict, metadata: Dict) -> N
                 f.write('{}\t{}\t{}\n'.format(rs_id, round(data[rs_id][0], 3), data[rs_id][1]))
             else:
                 f.write(f'{rs_id}\t\t\n')
-    with open(f'{data_path}/output/metadata', 'w') as f:
+    with open(f'{data_path}/sumstats/metadata', 'w') as f:
         json.dump(metadata, f)
 
 
