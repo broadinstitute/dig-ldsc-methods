@@ -13,17 +13,17 @@ def download_sumstats(username: str, dataset: str, tmp_dir: str) -> None:
 
 
 def download_sldsc(username: str, dataset: str, tmp_dir: str) -> None:
-    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/sumstats/'
+    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/sldsc/sumstats/'
     subprocess.check_call(f'aws s3 cp {path} {tmp_dir}/sumstats/ --recursive', shell=True)
 
 
 def upload_sumstats(username: str, dataset: str, tmp_dir: str) -> None:
-    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/sumstats'
-    subprocess.check_call(f'aws s3 cp {tmp_dir}/sumstats/ {path}', shell=True)
+    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/sldsc/sumstats'
+    subprocess.check_call(f'aws s3 cp {tmp_dir}/sumstats/ {path} --recursive', shell=True)
 
 
 def upload_sldsc(username: str, dataset: str, tmp_dir: str) -> None:
-    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/ldsc/sldsc/'
+    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/sldsc/sldsc/'
     subprocess.check_call(f'aws s3 cp {tmp_dir}/sldsc/ {path} --recursive', shell=True)
 
 
