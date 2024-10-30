@@ -17,9 +17,9 @@ def get_metadata(data_path: str) -> Dict:
     return metadata
 
 
-def get_var_to_rs_map(ancestry: str, genome_build: str) -> Dict:
+def get_var_to_rs_map(ancestry: str, genome_build: str, build_type: str) -> Dict:
     var_to_rs = {}
-    with open(f'{input_path}/snpmap/sumstats.{genome_build}.{ancestry}.snpmap', 'r') as f:
+    with open(f'{input_path}/snpmap/sumstats.{build_type}.{genome_build}.{ancestry}.snpmap', 'r') as f:
         for full_row in f.readlines():
             var_id, rs_id = full_row.strip().split('\t')
             var_to_rs[var_id] = rs_id
@@ -57,10 +57,12 @@ def valid_line(line: Dict, col_map: Dict, effective_n: Optional[float]) -> bool:
 
 
 def stream_to_data(data_path: str, file: str, ancestry: str, genome_build: str, effective_n: Optional[float], col_map: Dict, separator: str) -> List:
-    var_to_rs_map = get_var_to_rs_map(ancestry, genome_build)
+    var_to_rs_map = get_var_to_rs_map(ancestry, genome_build, 'standard')
+    var_to_rs_flipped = get_var_to_rs_map(ancestry, genome_build, 'flipped')
     out = []
     count = 0
     error_count = 0
+    flip_count = 0
     with gzip.open(f'{data_path}/raw/{file}', 'rt') as f_in:
         header = f_in.readline().strip().split(separator)
         for json_string in f_in:
@@ -77,7 +79,16 @@ def stream_to_data(data_path: str, file: str, ancestry: str, genome_build: str, 
                         out.append((var_to_rs_map[var_id], p_to_z(p_value, beta), n))
                     except ValueError:  # pValue, beta, or n not a value that can be converted to a float, skip
                         error_count += 1
-    print('{} SNPs translated from a total of {} ({} skipped)'.format(len(out), count, error_count))
+                elif var_id in var_to_rs_flipped:
+                    try:
+                        p_value = float(line[col_map['pValue']])
+                        beta = get_beta(line, col_map) * -1  # flip
+                        n = get_n(line, col_map, effective_n)
+                        out.append((var_to_rs_flipped[var_id], p_to_z(p_value, beta), n))
+                        flip_count += 1
+                    except ValueError:  # pValue, beta, or n not a value that can be converted to a float, skip
+                        error_count += 1
+    print('{} SNPs translated from a total of {} ({} skipped, {} flipped)'.format(len(out), count, error_count, flip_count))
     return out
 
 
@@ -88,7 +99,7 @@ def filter_data_to_dict(data: List) -> Dict:
 
 def save_to_file(data_path: str, ancestry: str, data: Dict, metadata: Dict) -> None:
     os.makedirs(f'{data_path}/sumstats/', exist_ok=True)
-    out_file = f'{data_path}/sumstats/ldsc.sumstats.gz'
+    out_file = f'{data_path}/sumstats/sldsc.sumstats.gz'
     with gzip.open(out_file, 'wt') as f:
         f.write('SNP\tZ\tN\n')
         for rs_id in ld_rs_iter(ancestry):

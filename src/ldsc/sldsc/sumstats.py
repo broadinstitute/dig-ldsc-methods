@@ -4,7 +4,7 @@ from numpy import typing as npt
 
 
 def dataset_path(data_path: str) -> str:
-    return f'{data_path}/sumstats/ldsc.sumstats.gz'
+    return f'{data_path}/sumstats/sldsc.sumstats.gz'
 
 
 def load_sumstats(data_path: str) -> (npt.NDArray, npt.NDArray, npt.NDArray):
