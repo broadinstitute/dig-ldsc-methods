@@ -29,8 +29,13 @@ def get_baseline_variables(ancestry: str) -> List[str]:
 
 
 def get_tissue_variables(tissue: str, ancestry: str) -> List[str]:
+    output = []
     with gzip.open(tissue_path(tissue, ancestry, 1), 'rt') as f:
-        return [f'tissue___{column}' for column in f.readline().strip().split('\t')[3:]]
+        columns = f.readline().strip().split('\t')[3:]
+        output.append(f'annotation___{columns[0]}')
+        for column in columns[1:]:
+            output.append(f'tissue___{column}')
+        return output
 
 
 def get_baseline_parameter_snps(ancestry: str) -> List[str]:
