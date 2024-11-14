@@ -10,11 +10,12 @@ from typing import List, Dict, Optional
 
 var_id_columns = ['chromosome', 'position', 'reference', 'alt']
 input_path = os.environ['INPUT_PATH']
+s3_path = os.environ['S3_BUCKET']
 
 
 def check_snpmap(ancestry: str, genome_build: str, build_type: str) -> None:
     if not os.path.exists(f'{input_path}/snpmap/sumstats.{build_type}.{genome_build}.{ancestry}.snpmap'):
-        cmd = f'./bootstrap/snpmap.bootstrap.sh {input_path} {build_type} {genome_build} {ancestry}'
+        cmd = f'./bootstrap/snpmap.bootstrap.sh {s3_path} {input_path} {build_type} {genome_build} {ancestry}'
         subprocess.check_call(cmd, shell=True)
 
 
@@ -24,7 +25,7 @@ def weights_path(ancestry: str, chromosome: int) -> str:
 
 def check_weights(ancestry: str) -> None:
     if not os.path.exists(weights_path(ancestry, 1)):
-        subprocess.check_call(f'./bootstrap/weights.bootstrap.sh {input_path} {ancestry}', shell=True)
+        subprocess.check_call(f'./bootstrap/weights.bootstrap.sh {s3_path} {input_path} {ancestry}', shell=True)
 
 
 def get_metadata(data_path: str) -> Dict:

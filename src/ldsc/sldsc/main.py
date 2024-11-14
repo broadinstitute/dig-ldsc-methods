@@ -9,16 +9,17 @@ import inputs, ldsc, sumstats, weights, xtx_xty
 
 MAX_BLOCKS = 200
 input_path = os.environ['INPUT_PATH']
+s3_path = os.environ['S3_BUCKET']
 
 
 def check_sldsc_inputs(ancestry: str) -> None:
     if not os.path.exists(inputs.get_input_zip_path(input_path, ancestry)):
-        subprocess.check_call(f'./bootstrap/sldsc.bootstrap.sh {input_path} {ancestry}', shell=True)
+        subprocess.check_call(f'./bootstrap/sldsc.bootstrap.sh {s3_path} {input_path} {ancestry}', shell=True)
 
 
 def check_weights(ancestry: str) -> None:
     if not os.path.exists(weights.weights_path(input_path, ancestry, 1)):
-        subprocess.check_call(f'./bootstrap/weights.bootstrap.sh {input_path} {ancestry}', shell=True)
+        subprocess.check_call(f'./bootstrap/weights.bootstrap.sh {s3_path} {input_path} {ancestry}', shell=True)
 
 
 def get_metadata(data_path: str) -> Dict:

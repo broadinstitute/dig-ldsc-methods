@@ -1,12 +1,13 @@
 #!/bin/bash
 
-if [[ ! $# -eq 4 ]]; then
-  echo "Usage: snpmap.bootstrap.sh <destination_dir> <build_type> <genome_build> <ancestry>"
+if [[ ! $# -eq 5 ]]; then
+  echo "Usage: snpmap.bootstrap.sh <data_dir> <destination_dir> <build_type> <genome_build> <ancestry>"
   exit 1
 fi
-DIR=$1
-BUILD_TYPE=$2
-GENOME_BUILD=$3
-ANCESTRY=$4
+DATA_DIR=$1
+INPUT_DIR=$2
+BUILD_TYPE=$3
+GENOME_BUILD=$4
+ANCESTRY=$5
 
-aws s3 cp s3://dig-ldsc-server/bin/snpmap/sumstats.${BUILD_TYPE}.${GENOME_BUILD}.${ANCESTRY}.snpmap ${DIR}/snpmap/
+aws s3 cp ${DATA_DIR}/bin/snpmap/sumstats.${BUILD_TYPE}.${GENOME_BUILD}.${ANCESTRY}.snpmap ${INPUT_DIR}/snpmap/
