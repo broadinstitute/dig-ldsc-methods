@@ -1,34 +1,31 @@
 import argparse
-import glob
 import json
 import numpy as np
 import os
-import re
-from typing import Dict, List
+import subprocess
+from typing import Dict
 
 import inputs, ldsc, sumstats, weights, xtx_xty
 
 MAX_BLOCKS = 200
 input_path = os.environ['INPUT_PATH']
+s3_path = os.environ['S3_BUCKET']
 
 
-def get_all_tissues(ancestry: str) -> List[str]:
-    tissues = set()
-    for tissue_path in glob.glob(f'{input_path}/inputs/{ancestry}/tissue/tissue_ld.*___*.{ancestry}.npy'):
-        tissue = re.findall(f'{input_path}/inputs/{ancestry}/tissue/tissue_ld.(.*).{ancestry}.npy', tissue_path)[0]
-        tissues |= {tissue}
-    return sorted(tissues)
+def check_sldsc_inputs(ancestry: str) -> None:
+    if not os.path.exists(inputs.get_input_zip_path(input_path, ancestry)):
+        subprocess.check_call(f'./bootstrap/sldsc.bootstrap.sh {s3_path} {input_path} {ancestry}', shell=True)
+
+
+def check_weights(ancestry: str) -> None:
+    if not os.path.exists(weights.weights_path(input_path, ancestry, 1)):
+        subprocess.check_call(f'./bootstrap/weights.bootstrap.sh {s3_path} {input_path} {ancestry}', shell=True)
 
 
 def get_metadata(data_path: str) -> Dict:
     with open(f'{data_path}/sumstats/metadata', 'r') as f:
         metadata = json.load(f)
     return metadata
-
-
-def get_version(ancestry):
-    with open(f'{input_path}/inputs/{ancestry}/version', 'r') as f:
-        return f.readline().strip()
 
 
 def save_data(output: Dict, metadata: Dict, data_path: str) -> None:
@@ -39,7 +36,7 @@ def save_data(output: Dict, metadata: Dict, data_path: str) -> None:
             for line in data:
                 f.write(line)
     with open(f'{data_path}/sldsc/metadata', 'w') as f:
-        metadata['version'] = get_version(metadata['ancestry'])
+        metadata['version'] = inputs.get_version(input_path, metadata['ancestry'])
         json.dump(metadata, f)
 
 
@@ -50,6 +47,9 @@ def main():
 
     metadata = get_metadata(data_path)
     ancestry = metadata['ancestry']
+
+    check_sldsc_inputs(ancestry)
+    check_weights(ancestry)
 
     chisq, sample_size, idxs = sumstats.load_sumstats(data_path)
     chisq, sample_size, idxs = sumstats.filter_sumstats(chisq, sample_size, idxs)
@@ -70,7 +70,7 @@ def main():
     y = xtx_xty.get_y(chisq, baseline_weights)
 
     output = {}
-    for tissue in get_all_tissues(ancestry):
+    for tissue in inputs.get_all_tissues(input_path, ancestry):
         overlap_matrix = inputs.get_overlap(input_path, tissue, ancestry)
         total_snps = overlap_matrix[0][0]
 

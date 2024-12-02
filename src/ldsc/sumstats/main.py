@@ -5,10 +5,27 @@ import math
 import numpy as np
 import os
 from scipy.stats import chi2
+import subprocess
 from typing import List, Dict, Optional
 
 var_id_columns = ['chromosome', 'position', 'reference', 'alt']
 input_path = os.environ['INPUT_PATH']
+s3_path = os.environ['S3_BUCKET']
+
+
+def check_snpmap(ancestry: str, genome_build: str, build_type: str) -> None:
+    if not os.path.exists(f'{input_path}/snpmap/sumstats.{build_type}.{genome_build}.{ancestry}.snpmap'):
+        cmd = f'./bootstrap/snpmap.bootstrap.sh {s3_path} {input_path} {build_type} {genome_build} {ancestry}'
+        subprocess.check_call(cmd, shell=True)
+
+
+def weights_path(ancestry: str, chromosome: int) -> str:
+    return f'{input_path}/weights/{ancestry}/weights.{chromosome}.l2.ldscore.gz'
+
+
+def check_weights(ancestry: str) -> None:
+    if not os.path.exists(weights_path(ancestry, 1)):
+        subprocess.check_call(f'./bootstrap/weights.bootstrap.sh {s3_path} {input_path} {ancestry}', shell=True)
 
 
 def get_metadata(data_path: str) -> Dict:
@@ -19,6 +36,7 @@ def get_metadata(data_path: str) -> Dict:
 
 def get_var_to_rs_map(ancestry: str, genome_build: str, build_type: str) -> Dict:
     var_to_rs = {}
+    check_snpmap(ancestry, genome_build, build_type)
     with open(f'{input_path}/snpmap/sumstats.{build_type}.{genome_build}.{ancestry}.snpmap', 'r') as f:
         for full_row in f.readlines():
             var_id, rs_id = full_row.strip().split('\t')
@@ -112,8 +130,9 @@ def save_to_file(data_path: str, ancestry: str, data: Dict, metadata: Dict) -> N
 
 
 def ld_rs_iter(ancestry: str) -> str:
-    for CHR in range(1, 23):
-        with gzip.open(f'{input_path}/weights/{ancestry}/weights.{CHR}.l2.ldscore.gz', 'rt') as f:
+    check_weights(ancestry)
+    for chromosome in range(1, 23):
+        with gzip.open(weights_path(ancestry, chromosome), 'rt') as f:
             _ = f.readline()
             for line in f:
                 yield line.strip().split('\t')[1]
