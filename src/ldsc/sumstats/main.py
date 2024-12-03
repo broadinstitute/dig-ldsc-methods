@@ -9,8 +9,13 @@ import subprocess
 from typing import List, Dict, Optional
 
 var_id_columns = ['chromosome', 'position', 'reference', 'alt']
-input_path = os.environ['INPUT_PATH']
-s3_path = os.environ['S3_BUCKET']
+input_path = os.environ.get('INPUT_PATH')
+s3_path = os.environ.get('S3_BUCKET')
+
+
+def check_envvars():
+    assert input_path is not None
+    assert s3_path is not None
 
 
 def check_snpmap(ancestry: str, genome_build: str, build_type: str) -> None:
@@ -135,6 +140,7 @@ def ld_rs_iter(ancestry: str) -> str:
 
 
 def main():
+    check_envvars()
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', default=None, required=True, type=str)
     data_path = parser.parse_args().dir

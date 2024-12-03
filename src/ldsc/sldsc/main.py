@@ -8,8 +8,13 @@ from typing import Dict
 import inputs, ldsc, sumstats, weights, xtx_xty
 
 MAX_BLOCKS = 200
-input_path = os.environ['INPUT_PATH']
-s3_path = os.environ['S3_BUCKET']
+input_path = os.environ.get('INPUT_PATH')
+s3_path = os.environ.get('S3_BUCKET')
+
+
+def check_envvars():
+    assert input_path is not None
+    assert s3_path is not None
 
 
 def check_sldsc_inputs(ancestry: str) -> None:
@@ -41,6 +46,7 @@ def save_data(output: Dict, metadata: Dict, data_path: str) -> None:
 
 
 def main():
+    check_envvars()
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', default=None, required=True, type=str)
     data_path = parser.parse_args().dir
