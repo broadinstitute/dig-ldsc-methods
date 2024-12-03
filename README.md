@@ -121,3 +121,9 @@ The resulting output will be stored in the s3 bucket defined in Job Definition.
 
 see dig-job-server for code and information about using the job server and associated GUI to set up a remote system
 for uploaded and running LDSC analyses in AWS.
+
+## Tests
+
+Requires pytest. To run:
+
+`python -m pytest`
