@@ -109,7 +109,7 @@ Resources:
           - 'Ref::method'
         Environment:
           - Name: S3_BUCKET
-            Value: !Ref LDSCMethodsBucket
+            Value: !Sub 's3://${LDSCMethodsBucket}'
           - Name: INPUT_PATH
             Value: '.'
         JobRoleArn: !GetAtt LDSCMethodsJobRole.Arn
@@ -145,6 +145,7 @@ Resources:
                 Action:
                   - 's3:GetObject'
                   - 's3:PutObject'
+                  - 's3:ListBucket'
                 Resource:
                   - !Sub 'arn:aws:s3:::${BucketName}'
                   - !Sub 'arn:aws:s3:::${BucketName}/*'
