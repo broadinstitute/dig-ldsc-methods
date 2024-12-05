@@ -11,11 +11,15 @@ Parameters:
 Resources:
   LDSCMethodsEcrRepository:
     Type: AWS::ECR::Repository
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       RepositoryName: ldsc-methods
 
   LDSCMethodsBucket:
     Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Ref BucketName
       VersioningConfiguration:
