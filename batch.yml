@@ -7,6 +7,15 @@ Parameters:
     Type: String
     Description: Name of the S3 bucket to create for LDSC methods
     Default: dig-ldsc-server
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Select a VPC for the LDSC methods compute environment
+    Default: vpc-a53ba7c2
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Select one or more subnets in your selected VPC.
+    Default: subnet-ab89bbf3
+
 
 Resources:
   LDSCMethodsEcrRepository:
@@ -45,6 +54,17 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole'
 
+  BatchSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ldsc methods compute environment
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
   LDSCMethodsComputeEnv:
     Type: 'AWS::Batch::ComputeEnvironment'
     Properties:
@@ -53,6 +73,9 @@ Resources:
       ComputeResources:
         Type: Fargate
         MaxvCpus: 128
+        Subnets: !Ref SubnetIds
+        SecurityGroupIds:
+          - !Ref BatchSecurityGroup
 
   LDSCMethodsJobQueue:
     Type: 'AWS::Batch::JobQueue'
