@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description:
+  If you'd like to run LDSC methods in a AWS Batch Environment, this CloudFormation template will create the necessary resources to do so.
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: Name of the S3 bucket to create for LDSC methods
+    Default: dig-ldsc-server
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Select a VPC for the LDSC methods compute environment
+    Default: vpc-a53ba7c2
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Select one or more subnets in your selected VPC.
+    Default: subnet-ab89bbf3
+
+
+Resources:
+  LDSCMethodsEcrRepository:
+    Type: AWS::ECR::Repository
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      RepositoryName: ldsc-methods
+
+  LDSCMethodsBucket:
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Ref BucketName
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  BatchServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - batch.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole'
+
+  BatchSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ldsc methods compute environment
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+  LDSCMethodsComputeEnv:
+    Type: 'AWS::Batch::ComputeEnvironment'
+    Properties:
+      Type: MANAGED
+      ServiceRole: !GetAtt BatchServiceRole.Arn
+      ComputeResources:
+        Type: Fargate
+        MaxvCpus: 128
+        Subnets: !Ref SubnetIds
+        SecurityGroupIds:
+          - !Ref BatchSecurityGroup
+
+  LDSCMethodsJobQueue:
+    Type: 'AWS::Batch::JobQueue'
+    Properties:
+      JobQueueName: 'ldsc-methods-job-queue'
+      ComputeEnvironmentOrder:
+        - Order: 1
+          ComputeEnvironment: !Ref LDSCMethodsComputeEnv
+      Priority: 1
+      State: ENABLED
+
+  LDSCMethodsJobDefinition:
+    Type: 'AWS::Batch::JobDefinition'
+    Properties:
+      Type: 'container'
+      JobDefinitionName: 'dig-ldsc-methods'
+      PlatformCapabilities:
+        - 'FARGATE'
+      Timeout:
+        AttemptDurationSeconds: 3600
+      ContainerProperties:
+        Image: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${LDSCMethodsEcrRepository}'
+        Command:
+          - 'python3'
+          - 'main.py'
+          - '--username'
+          - 'Ref::username'
+          - '--dataset'
+          - 'Ref::dataset'
+          - '--method'
+          - 'Ref::method'
+        Environment:
+          - Name: S3_BUCKET
+            Value: !Sub 's3://${LDSCMethodsBucket}'
+          - Name: INPUT_PATH
+            Value: '.'
+        JobRoleArn: !GetAtt LDSCMethodsJobRole.Arn
+        ExecutionRoleArn: !GetAtt LDSCMethodsJobRole.Arn
+        ResourceRequirements:
+          - Type: 'VCPU'
+            Value: '1.0'
+          - Type: 'MEMORY'
+            Value: '8192'
+        NetworkConfiguration:
+          AssignPublicIp: 'ENABLED'
+        FargatePlatformConfiguration:
+          PlatformVersion: 'LATEST'
+  LDSCMethodsJobRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'ecs-tasks.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: 'S3Access'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                  - 's3:ListBucket'
+                Resource:
+                  - !Sub 'arn:aws:s3:::${BucketName}'
+                  - !Sub 'arn:aws:s3:::${BucketName}/*'
+        - PolicyName: 'ECSTaskExecution'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'ecr:GetAuthorizationToken'
+                  - 'ecr:BatchCheckLayerAvailability'
+                  - 'ecr:GetDownloadUrlForLayer'
+                  - 'ecr:BatchGetImage'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: '*'
