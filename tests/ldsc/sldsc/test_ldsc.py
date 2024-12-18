@@ -103,3 +103,24 @@ def test_corrected_se() -> None:
     c = 0.75 * 0.75
     assert corrected_cov[0][0] == pytest.approx(np.sqrt(1 * a + 2 * b + 2 * b + 4 * c))
     assert corrected_cov[1][0] == pytest.approx(np.sqrt(9 * a + 12 * b + 12 * b + 16 * c))
+
+
+def test_integrated_h2() -> None:
+    xtx1, xty1 = get_xtx_xty([[1.0, 1.0, 5.0], [1.0, 2.0, 8.0], [2.0, 1.0, 7.0]])
+    xtx2, xty2 = get_xtx_xty([[1.0, 1.0, 10.0], [1.0, 2.0, 16.0], [2.0, 1.0, 14.0]])
+    xtx, xty = np.array([xtx1, xtx2]), np.array([xty1, xty2])
+    overlap_matrix = np.array([[100, 50], [50, 100]])
+    parameter_snps = np.array([[2.0], [4.0]])
+    total_snps = 0.32
+    mean_sample_size = 2.0
+    h2 = ldsc.get_h2(xtx, xty, overlap_matrix, parameter_snps, total_snps, mean_sample_size)
+
+    assert pytest.approx(h2[0]['expHeritability']) == 6.25
+    assert pytest.approx(h2[0]['heritability']) == 21.875
+    assert pytest.approx(h2[0]['enrichment']) == 3.5
+    assert pytest.approx(h2[0]['pValue']) == 0.095466
+
+    assert pytest.approx(h2[1]['expHeritability']) == 12.5
+    assert pytest.approx(h2[1]['heritability']) == 25.0
+    assert pytest.approx(h2[1]['enrichment']) == 2.0
+    assert pytest.approx(h2[1]['pValue']) == 0.095466
