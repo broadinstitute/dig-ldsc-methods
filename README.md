@@ -127,3 +127,15 @@ for uploaded and running LDSC analyses in AWS.
 Requires pytest. To run:
 
 `python -m pytest`
+
+## Deploying to AWS
+We provide [batch.yml](batch.yml) as cloud formation template that defines AWS Batch infrastructure to run these methods.
+The template defines the usual things you need to run a batch job like an ECR repo, role to use while running these jobs,
+the job definition, the the job queue, and the compute environment.  The compute environment also allows all outbound traffic. 
+Finally, it also creates an AWS S3 bucket where the jobs will try to access reference files and write results. You can apply 
+this template in your own account by either visiting the Cloud Formation section of the web console and uploading batch.yml 
+or you can use the AWS cli like so: `aws cloudformation create-stack --stack-name <stack-name> --template-body file://batch.yml --capabilities CAPABILITY_NAMED_IAM   --parameter-overrides BucketName=<s3-bucket-to-create> VpcId=<existing vpc where these jobs will run> SubnetIds=<comma separated list of subnets to use in the vpc>`
+
+Once you've set up the prerequisite infrastructure you can build the docker image and push it to the ECR repo created when you applied the template.
+Then you can run a job with the AWS cli like so: `aws batch submit-job --job-definition dig-ldsc-methods --job-queue ldsc-methods-job-queue --job-name dig-ldsc-methods --parameters username=<user>,dataset=<dataset>,method=<sumstats|sldsc>`
+TODO: Add a description of the expected file structure in the s3 bucket and the reference files that need to be present.
