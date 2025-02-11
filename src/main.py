@@ -9,22 +9,22 @@ input_path = os.environ['INPUT_PATH']
 
 def download_sumstats(username: str, dataset: str, tmp_dir: str) -> None:
     path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/raw/'
-    subprocess.check_call(f'aws s3 cp {path} {tmp_dir}/raw/ --recursive', shell=True)
+    subprocess.check_call(f'aws s3 cp {path} {tmp_dir}/raw/ --recursive')
 
 
 def download_sldsc(username: str, dataset: str, tmp_dir: str) -> None:
     path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/sldsc/sumstats/'
-    subprocess.check_call(f'aws s3 cp {path} {tmp_dir}/sumstats/ --recursive', shell=True)
+    subprocess.check_call(f'aws s3 cp {path} {tmp_dir}/sumstats/ --recursive')
 
 
 def upload_sumstats(username: str, dataset: str, tmp_dir: str) -> None:
     path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/sldsc/sumstats'
-    subprocess.check_call(f'aws s3 cp {tmp_dir}/sumstats/ {path} --recursive', shell=True)
+    subprocess.check_call(f'aws s3 cp {tmp_dir}/sumstats/ {path} --recursive')
 
 
 def upload_sldsc(username: str, dataset: str, tmp_dir: str) -> None:
     path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/sldsc/sldsc/'
-    subprocess.check_call(f'aws s3 cp {tmp_dir}/sldsc/ {path} --recursive', shell=True)
+    subprocess.check_call(f'aws s3 cp {tmp_dir}/sldsc/ {path} --recursive')
 
 
 def main():
