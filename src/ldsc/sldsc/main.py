@@ -28,7 +28,7 @@ def check_weights(ancestry: str) -> None:
 
 
 def get_metadata(data_path: str) -> Dict:
-    with open(f'{data_path}/sumstats/metadata', 'r') as f:
+    with open(f'{data_path}/sldsc/sumstats/metadata', 'r') as f:
         metadata = json.load(f)
     return metadata
 
