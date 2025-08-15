@@ -5,7 +5,7 @@ import os
 import subprocess
 from typing import List, Dict, Optional
 
-var_id_columns = ['chromosome', 'position', 'reference', 'alt']
+var_id_columns = ['chromosome', 'position']
 input_path = os.environ.get('INPUT_PATH')
 s3_path = os.environ.get('S3_BUCKET')
 
@@ -15,9 +15,9 @@ def check_envvars():
     assert s3_path is not None
 
 
-def check_snpmap(genome_build: str, build_type: str) -> None:
-    if not os.path.exists(f'{input_path}/snpmap/sumstats.{build_type}.{genome_build}.snpmap'):
-        cmd = f'./bootstrap/snpmap.bootstrap.sh {s3_path} {input_path} {build_type} {genome_build}'
+def check_snpmap(genome_build: str) -> None:
+    if not os.path.exists(f'{input_path}/snpmap/sumstats.{genome_build}.snpmap'):
+        cmd = f'./bootstrap/snpmap.bootstrap.sh {s3_path} {input_path} {genome_build}'
         subprocess.check_call(cmd, shell=True)
 
 
@@ -27,14 +27,14 @@ def get_metadata(data_path: str) -> Dict:
     return metadata
 
 
-def get_var_to_rs_map(genome_build: str, build_type: str) -> Dict:
-    var_to_rs = {}
-    check_snpmap(genome_build, build_type)
-    with open(f'{input_path}/snpmap/sumstats.{build_type}.{genome_build}.snpmap', 'r') as f:
-        for full_row in f.readlines():
-            var_id, rs_id = full_row.strip().split('\t')
-            var_to_rs[var_id] = rs_id
-    return var_to_rs
+def get_rs_map(genome_build: str) -> Dict:
+    check_snpmap(genome_build)
+    rs_map = {}
+    with open(f'{input_path}/snpmap/sumstats.{genome_build}.snpmap', 'r') as f:
+        for line in f:
+            chromosome, position, rs_id = line.strip().split('\t')
+            rs_map[(chromosome, position)] = rs_id
+    return rs_map
 
 
 def get_p_value(line: Dict, col_map: Dict) -> float:
@@ -55,7 +55,7 @@ def valid_line(line: Dict, col_map: Dict, effective_n: Optional[float]) -> bool:
         0 < float(line[col_map['pValue']]) <= 1
 
 
-def stream_to_data(file_path: str, var_to_rs_map: Dict, var_to_rs_flipped: Dict, metadata: Dict) -> (List, Dict):
+def stream_to_data(file_path: str, rs_map: Dict, metadata: Dict) -> (List, Dict):
     out = []
     counts = {'all': 0, 'flipped': 0, 'error': 0}
     effective_n = metadata.get('effective_n')
@@ -67,16 +67,13 @@ def stream_to_data(file_path: str, var_to_rs_map: Dict, var_to_rs_flipped: Dict,
             line = dict(zip(header, json_string.strip().split(separator)))
             counts['all'] += 1
             if valid_line(line, col_map, effective_n):
-                chromosome, position, reference, alt = (line[col_map[c]] for c in var_id_columns)
-                var_id = f'{chromosome}:{position}:{reference.upper()}:{alt.upper()}'
-                if var_id in var_to_rs_map or var_id in var_to_rs_flipped:
-                    flipped = var_id in var_to_rs_flipped
-                    rs_id = var_to_rs_flipped[var_id] if flipped else var_to_rs_map[var_id]
+                chromosome, position = (line[col_map[c]] for c in var_id_columns)
+                if (chromosome, position) in rs_map:
+                    rs_id = rs_map[(chromosome, position)]
                     try:
                         p_value = float(line[col_map['pValue']])
                         n = get_n(line, col_map, effective_n)
                         out.append((rs_id, p_value, n))
-                        counts['flipped'] += flipped
                     except ValueError:  # pValue, beta, or n not a value that can be converted to a float, skip
                         counts['error'] += 1
     counts['final'] = len(out)
@@ -104,9 +101,8 @@ def main():
     file = metadata['file']
     genome_build = metadata['genome_build']
 
-    var_to_rs_map = get_var_to_rs_map(genome_build, 'standard')
-    var_to_rs_flipped = get_var_to_rs_map(genome_build, 'flipped')
-    data, counts = stream_to_data(f'{data_path}/raw/{file}', var_to_rs_map, var_to_rs_flipped, metadata)
+    rs_map = get_rs_map(genome_build)
+    data, counts = stream_to_data(f'{data_path}/raw/{file}', rs_map, metadata)
     metadata['counts'] = counts
     if len(data) > 0:
         save_to_file(data_path, data, metadata)
