@@ -139,3 +139,9 @@ or you can use the AWS cli like so: `aws cloudformation create-stack --stack-nam
 Once you've set up the prerequisite infrastructure you can build the docker image and push it to the ECR repo created when you applied the template.
 Then you can run a job with the AWS cli like so: `aws batch submit-job --job-definition dig-ldsc-methods --job-queue ldsc-methods-job-queue --job-name dig-ldsc-methods --parameters username=<user>,dataset=<dataset>,method=<sumstats|sldsc>`
 TODO: Add a description of the expected file structure in the s3 bucket and the reference files that need to be present.
+
+The steps are roughly:
+1) `aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <AWS account #>.dkr.ecr.us-east-1.amazonaws.com`
+2) `docker build --platform=linux/amd64 -t ldsc-methods .`
+3) `docker tag <repository name>:latest <AWS account #>.dkr.ecr.us-east-1.amazonaws.com/<repository name>:latest`
+4) `docker push <AWS account #>.dkr.ecr.us-east-1.amazonaws.com/<repository name>:latest`
