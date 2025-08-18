@@ -1,8 +1,10 @@
 import argparse
+import gzip
 import json
 import numpy as np
 import os
 import re
+import shutil
 import subprocess
 from typing import Dict
 
@@ -57,6 +59,12 @@ def get_metadata(data_path: str) -> Dict:
     return metadata
 
 
+def unzip_sumstats(data_path: str) -> None:
+    with gzip.open(f'{data_path}/sumstats/magma.sumstats.csv.gz', 'rb') as f_in:
+        with open(f'{data_path}/sumstats/magma.sumstats.csv', 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+
 def get_gene_map() -> Dict:
     out = {}
     with open(f'{input_path}/inputs/NCBI37.3.gene.loc', 'r') as f:
@@ -71,7 +79,7 @@ def get_gene_map() -> Dict:
 
 def convert(data_path: str) -> None:
     gene_map = get_gene_map()
-    with open(f'{data_path}/genes/associations.genes.json', 'w') as f_out:
+    with gzip.open(f'{data_path}/genes/associations.genes.json.gz', 'wt') as f_out:
         with open(f'{data_path}/genes/associations.genes.out', 'r') as f:
             _ = f.readline()
             for line in f:
@@ -99,6 +107,8 @@ def main() -> None:
     check_genes()
     check_magma()
     check_g1000(ancestry)
+
+    unzip_sumstats(data_path)
     os.makedirs(f'{data_path}/genes', exist_ok=True)
     subprocess.check_call(f'{input_path}/inputs/magma/magma '
                           f'--bfile {input_path}/inputs/g1000/EUR/g1000_{ancestry} '
