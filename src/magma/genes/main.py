@@ -68,7 +68,6 @@ def unzip_sumstats(data_path: str) -> None:
 def get_gene_map() -> Dict:
     out = {}
     with open(f'{input_path}/inputs/NCBI37.3.gene.loc', 'r') as f:
-        _ = f.readline()
         for line in f:
             split_line = [col.strip() for col in line.split('\t')]
             geneId = int(split_line[0])
