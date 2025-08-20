@@ -12,7 +12,8 @@ def get_upload_method(method: str) -> (str, str):
         'sumstats': ('genetic', 'sldsc/sumstats'),
         'sldsc': ('genetic', 'sldsc/sldsc'),
         'magma-sumstats': ('genetic', 'magma/sumstats'),
-        'magma-genes': ('genetic', 'magma/genes')
+        'magma-genes': ('genetic', 'magma/genes'),
+        'annot-ld': ('annotation', 'sldsc/ld')
     }[method]
 
 
@@ -21,7 +22,8 @@ def get_download_method(method: str) -> (str, str):
         'sumstats': ('genetic', 'raw'),
         'sldsc': ('genetic', 'sldsc/sumstats'),
         'magma-sumstats': ('genetic', 'raw'),
-        'magma-genes': ('genetic', 'magma/sumstats')
+        'magma-genes': ('genetic', 'magma/sumstats'),
+        'annot-ld': ('annotation', 'raw')
     }[method]
 
 
@@ -31,7 +33,7 @@ def get_cwd(method: str) -> str:
         'sldsc': 'ldsc/sldsc/',
         'magma-sumstats': 'magma/sumstats/',
         'magma-genes': 'magma/genes/',
-        'ld': 'ldsc/ld/',
+        'annot-ld': 'ldsc/ld/'
     }[method]
 
 
