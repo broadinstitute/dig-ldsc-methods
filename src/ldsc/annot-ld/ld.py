@@ -36,7 +36,7 @@ def check_hapmap() -> None:
 
 
 def annotation_path(data_path: str, chromosome: str) -> str:
-    return f'{data_path}/sldsc/ld/ld.{chromosome}.annot.gz'
+    return f'{data_path}/sldsc/annot-ld/ld.{chromosome}.annot.gz'
 
 
 def get_bim_data(ancestry: str, chromosome: str) -> Tuple[List[int], List[float], List[Tuple[str, int]]]:
@@ -65,14 +65,14 @@ def get_annotation(data_path: str, chromosome: str) -> List[int]:
 
 
 def write_output(data_path: str, chromosome: str, l2s: List[float], rsids: List[Tuple[str, int]], M: int, M_5: int) -> None:
-    os.makedirs(f'{data_path}/sldsc/ld/', exist_ok=True)
-    with gzip.open(f'{data_path}/sldsc/ld/ld.{chromosome}.l2.ldscore.gz', 'w') as f:
+    os.makedirs(f'{data_path}/sldsc/annot-ld/', exist_ok=True)
+    with gzip.open(f'{data_path}/sldsc/annot-ld/ld.{chromosome}.l2.ldscore.gz', 'w') as f:
         f.write(b'CHR\tSNP\tBP\tL2\n')
         for (rsid, bp), l2 in zip(rsids, l2s):
             f.write(f'{chromosome}\t{rsid}\t{bp}\t{round(l2, 3)}\n'.encode())
-    with open(f'{data_path}/sldsc/ld/ld.{chromosome}.l2.M', 'w') as f:
+    with open(f'{data_path}/sldsc/annot-ld/ld.{chromosome}.l2.M', 'w') as f:
         f.write(f'{M}\n')
-    with open(f'{data_path}/sldsc/ld/ld.{chromosome}.l2.M_5_50', 'w') as f:
+    with open(f'{data_path}/sldsc/annot-ld/ld.{chromosome}.l2.M_5_50', 'w') as f:
         f.write(f'{M_5}\n')
 
 
@@ -167,7 +167,7 @@ def ld(data_path: str, ancestry: str) -> None:
     check_g1000(ancestry)
     check_hapmap()
     tot_time = 0
-    for chromosome in range(1, 22):
+    for chromosome in range(1, 23):
         t = time.time()
         run_chromosome(data_path, ancestry, str(chromosome))
         print(f'Chromosome Run Time ({chromosome}): {round(time.time() - t, 3)}')

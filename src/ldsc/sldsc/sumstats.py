@@ -8,11 +8,15 @@ def dataset_path(data_path: str) -> str:
 
 
 def load_sumstats(data_path: str) -> (npt.NDArray, npt.NDArray, npt.NDArray):
+    return load_sumstats_from(dataset_path(data_path))
+
+
+def load_sumstats_from(data_path: str) -> (npt.NDArray, npt.NDArray, npt.NDArray):
     idxs = []
     z = []
     n = []
     snps = []
-    with gzip.open(dataset_path(data_path), 'rt') as f:
+    with gzip.open(data_path, 'rt') as f:
         _ = f.readline()  # header
         for i, line in enumerate(f):
             split_line = line.strip().split('\t')

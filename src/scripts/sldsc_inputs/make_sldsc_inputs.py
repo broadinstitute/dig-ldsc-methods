@@ -38,7 +38,7 @@ def get_tissue_variables(tissue: str, ancestry: str) -> List[str]:
         return output
 
 
-def get_baseline_parameter_snps(ancestry: str) -> List[str]:
+def get_baseline_parameter_snps(ancestry: str) -> npt.NDArray:
     output = []
     for chromosome in range(1, 23):
         with open(baseline_m_path(ancestry, chromosome), 'r') as f:
@@ -46,7 +46,7 @@ def get_baseline_parameter_snps(ancestry: str) -> List[str]:
     return np.array(output).sum(axis=0, keepdims=True).T
 
 
-def get_tissue_parameter_snps(tissue: str, ancestry: str) -> List[str]:
+def get_tissue_parameter_snps(tissue: str, ancestry: str) -> npt.NDArray:
     output = []
     for chromosome in range(1, 23):
         with open(tissue_m_path(tissue, ancestry, chromosome), 'r') as f:

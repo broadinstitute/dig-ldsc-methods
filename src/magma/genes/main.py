@@ -78,8 +78,8 @@ def get_gene_map() -> Dict:
 
 def convert(data_path: str) -> None:
     gene_map = get_gene_map()
-    with gzip.open(f'{data_path}/genes/associations.genes.json.gz', 'wt') as f_out:
-        with open(f'{data_path}/genes/associations.genes.out', 'r') as f:
+    with gzip.open(f'{data_path}/magma/genes/associations.genes.json.gz', 'wt') as f_out:
+        with open(f'{data_path}/magma/genes/associations.genes.out', 'r') as f:
             _ = f.readline()
             for line in f:
                 split_line = re.sub(' +', ' ', line).split(' ')
@@ -97,6 +97,7 @@ def main() -> None:
     check_envvars()
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', default=None, required=True, type=str)
+    parser.add_argument('--method', default=None, required=True, type=str)
     data_path = parser.parse_args().dir
 
     metadata = get_metadata(data_path)
@@ -108,7 +109,7 @@ def main() -> None:
     check_g1000(ancestry)
 
     unzip_sumstats(data_path)
-    os.makedirs(f'{data_path}/genes', exist_ok=True)
+    os.makedirs(f'{data_path}/magma/genes', exist_ok=True)
     subprocess.check_call(f'{input_path}/inputs/magma/magma '
                           f'--bfile {input_path}/inputs/g1000/EUR/g1000_{ancestry} '
                           f'--pval {data_path}/magma/sumstats/magma.sumstats.csv ncol=N '

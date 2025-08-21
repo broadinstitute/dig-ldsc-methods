@@ -18,7 +18,7 @@ def baseline_annot_path(ancestry: str, chromosome: int) -> str:
 def tissue_annot_path(tissue: str, ancestry: str, chromosome: int) -> str:
     return f'tissue/{ancestry}/{tissue}/tissueLD.{chromosome}.annot.gz'
 
-
+# TODO: These are now duplicated to some degree
 def get_baseline_shape(ancestry: str) -> int:
     baseline_file = baseline_annot_path(ancestry, 1)
     with gzip.open(baseline_file, 'rt') as f:
@@ -47,7 +47,7 @@ def run_baseline_overlap(ancestry: str) -> None:
                     output += np_array.T.dot(np_array)
     save_overlap(f'overlap.baseline.{ancestry}.npy', ancestry, output)
 
-
+# TODO: These are now duplicated to some degree
 def run_tissue_overlap(file: str) -> None:
     ancestry, tissue = re.findall('tissue/(.*)/(.*)', file)[0]
     baseline_shape = get_baseline_shape(ancestry)

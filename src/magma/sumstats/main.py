@@ -95,6 +95,7 @@ def main():
     check_envvars()
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', default=None, required=True, type=str)
+    parser.add_argument('--method', default=None, required=True, type=str)
     data_path = parser.parse_args().dir
 
     metadata = get_metadata(data_path)
