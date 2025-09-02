@@ -2,7 +2,7 @@ import time
 import gzip
 import os
 import subprocess
-from typing import Iterator, List, Tuple
+from typing import Dict, Iterator, List, Tuple
 
 input_path = os.environ.get('INPUT_PATH')
 s3_path = os.environ.get('S3_BUCKET')
@@ -73,7 +73,9 @@ def run_chromosome(data_path: str, ancestry: str, chromosome: str) -> None:
     write_annot(data_path, chromosome, range_data, g1000_data)
 
 
-def annotation(data_path: str, ancestry: str) -> None:
+def annotation(data_path: str, metadata: Dict) -> None:
+    ancestry = metadata['ancestry']
+
     check_g1000(ancestry)
     tot_time = 0
     for chromosome in range(1, 23):

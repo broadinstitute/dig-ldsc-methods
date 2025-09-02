@@ -27,28 +27,16 @@ def check_frq(ancestry: str) -> None:
         subprocess.check_call(cmd, shell=True)
 
 
-def get_metadata(data_path: str) -> Dict:
-    with open(f'{data_path}/sldsc/annot-ld/metadata', 'r') as f:
-        metadata = json.load(f)
-    return metadata
-
-
-def save_data(output: Dict, metadata: Dict, data_path: str) -> None:
+def save_data(output: Dict, data_path: str) -> None:
     os.makedirs(f'{data_path}/sldsc/annot-sldsc/', exist_ok=True)
     for variable_type, data in output.items():
         file = f'{data_path}/sldsc/annot-sldsc/{variable_type}.output.tsv'
         with open(file, 'w') as f:
             for line in data:
                 f.write(line)
-    with open(f'{data_path}/sldsc/annot-sldsc/metadata', 'w') as f:
-        metadata['version'] = annot_inputs.get_version(input_path, metadata['ancestry'])
-        json.dump(metadata, f)
 
 
-def annot_sldsc(data_path):
-    check_envvars()
-
-    metadata = get_metadata(data_path)
+def annot_sldsc(data_path: str, metadata: Dict) -> Dict:
     ancestry = metadata['ancestry']
 
     check_inputs(ancestry)
@@ -93,4 +81,7 @@ def annot_sldsc(data_path):
             output[variable_type].append(line)
             if variable_type == 'custom':
                 print(i, line.strip())
-    save_data(output, metadata, data_path)
+    save_data(output, data_path)
+
+    metadata['version'] = annot_inputs.get_version(input_path, metadata['ancestry'])
+    return metadata

@@ -9,31 +9,19 @@
     "sldsc": {
       "cwd": "ldsc/sldsc",
       "dataset_type": "genetic",
-      "download_from": "sldsc/sumstats",
+      "download_from": "raw",
       "upload_to": "sldsc/sldsc"
     },
-    "magma-sumstats": {
-      "cwd": "magma/sumstats",
-      "dataset_type": "genetic",
-      "download_from": "raw",
-      "upload_to": "magma/sumstats"
-    },
-    "magma-genes": {
+    "magma": {
       "cwd": "magma/genes",
       "dataset_type": "genetic",
-      "download_from": "magma/sumstats",
-      "upload_to": "magma/genes"
-    },
-    "annot-ld": {
-      "cwd": "ldsc/annot-ld",
-      "dataset_type": "annotation",
       "download_from": "raw",
-      "upload_to": "sldsc/annot-ld"
+      "upload_to": "magma/genes"
     },
     "annot-sldsc": {
       "cwd": "ldsc/sldsc",
       "dataset_type": "annotation",
-      "download_from": "sldsc/annot-ld",
+      "download_from": "raw",
       "upload_to": "sldsc/annot-sldsc"
     }
   }

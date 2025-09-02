@@ -32,22 +32,16 @@ def get_metadata(data_path: str) -> Dict:
     return metadata
 
 
-def save_data(output: Dict, metadata: Dict, data_path: str) -> None:
+def save_data(output: Dict, data_path: str) -> None:
     os.makedirs(f'{data_path}/sldsc/sldsc', exist_ok=True)
     for variable_type, data in output.items():
         file = f'{data_path}/sldsc/sldsc/{variable_type}.output.tsv'
         with open(file, 'w') as f:
             for line in data:
                 f.write(line)
-    with open(f'{data_path}/sldsc/sldsc/metadata', 'w') as f:
-        metadata['version'] = inputs.get_version(input_path, metadata['ancestry'])
-        json.dump(metadata, f)
 
 
-def sldsc(data_path):
-    check_envvars()
-
-    metadata = get_metadata(data_path)
+def sldsc(data_path: str, metadata: Dict) -> Dict:
     ancestry = metadata['ancestry']
 
     check_sldsc_inputs(ancestry)
@@ -94,4 +88,7 @@ def sldsc(data_path):
                 output[variable_type] = []
             line = f'{annotation}\t{tissue_name}\t{variable_name}\t{value["enrichment"]}\t{value["pValue"]}\n'
             output[variable_type].append(line)
-    save_data(output, metadata, data_path)
+    save_data(output, data_path)
+
+    metadata['version'] = inputs.get_version(input_path, metadata['ancestry'])
+    return metadata

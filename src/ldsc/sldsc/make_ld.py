@@ -4,15 +4,11 @@ import numpy as np
 import os
 import struct
 import subprocess
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 from numpy import typing as npt
 
 input_path = os.environ.get('INPUT_PATH')
 s3_path = os.environ.get('S3_BUCKET')
-
-def check_envvars() -> None:
-    assert input_path is not None
-    assert s3_path is not None
 
 
 def g1000_path(ancestry: str, chromosome: str, extension: str) -> str:
@@ -163,7 +159,9 @@ def run_chromosome(data_path: str, ancestry: str, chromosome: str) -> None:
     write_output(data_path, chromosome, l2s, rsids, M, M_5)
 
 
-def ld(data_path: str, ancestry: str) -> None:
+def ld(data_path: str, metadata: Dict) -> None:
+    ancestry = metadata['ancestry']
+
     check_g1000(ancestry)
     check_hapmap()
     tot_time = 0
