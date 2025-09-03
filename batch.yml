@@ -116,9 +116,9 @@ Resources:
         ExecutionRoleArn: !GetAtt LDSCMethodsJobRole.Arn
         ResourceRequirements:
           - Type: 'VCPU'
-            Value: '1.0'
+            Value: '2.0'
           - Type: 'MEMORY'
-            Value: '8192'
+            Value: '16384'
         NetworkConfiguration:
           AssignPublicIp: 'ENABLED'
         FargatePlatformConfiguration:

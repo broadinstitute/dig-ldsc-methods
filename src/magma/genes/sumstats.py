@@ -10,21 +10,10 @@ input_path = os.environ.get('INPUT_PATH')
 s3_path = os.environ.get('S3_BUCKET')
 
 
-def check_envvars():
-    assert input_path is not None
-    assert s3_path is not None
-
-
 def check_snpmap(genome_build: str) -> None:
     if not os.path.exists(f'{input_path}/snpmap/sumstats.{genome_build}.snpmap'):
         cmd = f'./bootstrap/snpmap.bootstrap.sh {s3_path} {input_path} {genome_build}'
         subprocess.check_call(cmd, shell=True)
-
-
-def get_metadata(data_path: str) -> Dict:
-    with open(f'{data_path}/raw/metadata', 'r') as f:
-        metadata = json.load(f)
-    return metadata
 
 
 def get_rs_map(genome_build: str) -> Dict:
@@ -80,33 +69,21 @@ def stream_to_data(file_path: str, rs_map: Dict, metadata: Dict) -> (List, Dict)
     return out, counts
 
 
-def save_to_file(data_path: str, data: List, metadata: Dict) -> None:
+def save_to_file(data_path: str, data: List) -> None:
     os.makedirs(f'{data_path}/magma/sumstats/', exist_ok=True)
-    out_file = f'{data_path}/magma/sumstats/magma.sumstats.csv.gz'
-    with gzip.open(out_file, 'wt') as f:
+    out_file = f'{data_path}/magma/sumstats/magma.sumstats.csv'
+    with open(out_file, 'w') as f:
         f.write('SNP\tP\tN\n')
         for rs_id, p, n in data:
             f.write('{}\t{}\t{}\n'.format(rs_id, p, n))
-    with open(f'{data_path}/magma/sumstats/metadata', 'w') as f:
-        json.dump(metadata, f)
 
 
-def main():
-    check_envvars()
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dir', default=None, required=True, type=str)
-    data_path = parser.parse_args().dir
-
-    metadata = get_metadata(data_path)
+def main(data_path: str, metadata: Dict) -> Dict:
     file = metadata['file']
     genome_build = metadata['genome_build']
 
     rs_map = get_rs_map(genome_build)
     data, counts = stream_to_data(f'{data_path}/raw/{file}', rs_map, metadata)
     metadata['counts'] = counts
-    if len(data) > 0:
-        save_to_file(data_path, data, metadata)
-
-
-if __name__ == '__main__':
-    main()
+    save_to_file(data_path, data)
+    return metadata

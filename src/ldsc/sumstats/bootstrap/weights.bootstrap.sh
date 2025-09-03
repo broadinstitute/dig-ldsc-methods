@@ -10,5 +10,5 @@ ANCESTRY=$3
 
 mkdir -p ${INPUT_DIR}/weights/${ANCESTRY}
 aws s3 cp ${DATA_DIR}/bin/weights/weights_${ANCESTRY}.zip ./
-unzip weights_${ANCESTRY}.zip -d ${INPUT_DIR}/weights/${ANCESTRY}/
+unzip weights_${ANCESTRY}.zip -d ${INPUT_DIR}/weights/${ANCESTRY}
 rm weights_${ANCESTRY}.zip

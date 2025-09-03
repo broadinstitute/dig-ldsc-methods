@@ -1,52 +1,27 @@
 import argparse
+import json
 import os
 import subprocess
 import tempfile
+from typing import Dict
 
 s3_bucket = os.environ['S3_BUCKET']
 input_path = os.environ['INPUT_PATH']
 
 
-def get_upload_method(method: str) -> (str, str):
-    return {
-        'sumstats': ('genetic', 'sldsc/sumstats'),
-        'sldsc': ('genetic', 'sldsc/sldsc'),
-        'magma-sumstats': ('genetic', 'magma/sumstats'),
-        'magma-genes': ('genetic', 'magma/genes'),
-        'annot-ld': ('annotation', 'sldsc/ld')
-    }[method]
+def get_config(method: str) -> Dict:
+    with open('config.json', 'r') as f:
+        return json.load(f)['methods'][method]
 
 
-def get_download_method(method: str) -> (str, str):
-    return {
-        'sumstats': ('genetic', 'raw'),
-        'sldsc': ('genetic', 'sldsc/sumstats'),
-        'magma-sumstats': ('genetic', 'raw'),
-        'magma-genes': ('genetic', 'magma/sumstats'),
-        'annot-ld': ('annotation', 'raw')
-    }[method]
+def download(username: str, dataset: str, tmp_dir: str, config: Dict) -> None:
+    path = f'{s3_bucket}/userdata/{username}/{config["dataset_type"]}/{dataset}/{config["download_from"]}/'
+    subprocess.check_call(f'aws s3 cp "{path}" {tmp_dir}/{config["download_from"]}/ --recursive', shell=True)
 
 
-def get_cwd(method: str) -> str:
-    return {
-        'sumstats': 'ldsc/sumstats/',
-        'sldsc': 'ldsc/sldsc/',
-        'magma-sumstats': 'magma/sumstats/',
-        'magma-genes': 'magma/genes/',
-        'annot-ld': 'ldsc/ld/'
-    }[method]
-
-
-def download(username: str, dataset: str, tmp_dir: str, method: str) -> None:
-    dataset_type, download_type = get_download_method(method)
-    path = f'{s3_bucket}/userdata/{username}/{dataset_type}/{dataset}/{download_type}/'
-    subprocess.check_call(f'aws s3 cp "{path}" {tmp_dir}/{download_type}/ --recursive', shell=True)
-
-
-def upload(username: str, dataset: str, tmp_dir: str, method: str) -> None:
-    dataset_type, upload_type = get_upload_method(method)
-    path = f'{s3_bucket}/userdata/{username}/{dataset_type}/{dataset}/{upload_type}'
-    subprocess.check_call(f'aws s3 cp {tmp_dir}/{upload_type}/ "{path}" --recursive', shell=True)
+def upload(username: str, dataset: str, tmp_dir: str, config: Dict) -> None:
+    path = f'{s3_bucket}/userdata/{username}/{config["dataset_type"]}/{dataset}/{config["upload_to"]}/'
+    subprocess.check_call(f'aws s3 cp {tmp_dir}/{config["upload_to"]}/ "{path}" --recursive', shell=True)
 
 
 def main():
@@ -56,10 +31,11 @@ def main():
     parser.add_argument('--method', default=None, required=True, type=str)
     args = parser.parse_args()
 
+    config = get_config(args.method)
     tmp = tempfile.TemporaryDirectory()
-    download(args.username, args.dataset, tmp.name, args.method)
-    subprocess.check_call(['python3.8', 'main.py', f'--dir={tmp.name}'], cwd=get_cwd(args.method))
-    upload(args.username, args.dataset, tmp.name, args.method)
+    download(args.username, args.dataset, tmp.name, config)
+    subprocess.check_call(['python3.8', 'main.py', f'--dir={tmp.name}', f'--method={args.method}'], cwd=config['cwd'])
+    upload(args.username, args.dataset, tmp.name, config)
 
 
 if __name__ == '__main__':

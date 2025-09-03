@@ -1,6 +1,4 @@
-import argparse
 import gzip
-import json
 import math
 import numpy as np
 import os
@@ -11,11 +9,6 @@ from typing import List, Dict, Optional
 var_id_columns = ['chromosome', 'position', 'reference', 'alt']
 input_path = os.environ.get('INPUT_PATH')
 s3_path = os.environ.get('S3_BUCKET')
-
-
-def check_envvars():
-    assert input_path is not None
-    assert s3_path is not None
 
 
 def check_snpmap(ancestry: str, genome_build: str, build_type: str) -> None:
@@ -31,12 +24,6 @@ def weights_path(ancestry: str, chromosome: int) -> str:
 def check_weights(ancestry: str) -> None:
     if not os.path.exists(weights_path(ancestry, 1)):
         subprocess.check_call(f'./bootstrap/weights.bootstrap.sh {s3_path} {input_path} {ancestry}', shell=True)
-
-
-def get_metadata(data_path: str) -> Dict:
-    with open(f'{data_path}/raw/metadata', 'r') as f:
-        metadata = json.load(f)
-    return metadata
 
 
 def get_var_to_rs_map(ancestry: str, genome_build: str, build_type: str) -> Dict:
@@ -73,10 +60,10 @@ def p_to_z(p: float, beta: float) -> float:
 
 def valid_line(line: Dict, col_map: Dict, effective_n: Optional[float]) -> bool:
     return all([line.get(col_map[column]) is not None for column in var_id_columns]) and \
-           col_map['pValue'] in line and line[col_map['pValue']] != '' and \
-           (('beta' in col_map and col_map['beta'] in line) or ('oddsRatio' in col_map and col_map['oddsRatio'] in line)) and \
-           (('n' in col_map and col_map['n'] in line) or effective_n is not None) and \
-           0 < float(line[col_map['pValue']]) <= 1
+        col_map['pValue'] in line and line[col_map['pValue']] != '' and \
+        (('beta' in col_map and col_map['beta'] in line) or ('oddsRatio' in col_map and col_map['oddsRatio'] in line)) and \
+        (('n' in col_map and col_map['n'] in line) or effective_n is not None) and \
+        0 < float(line[col_map['pValue']]) <= 1
 
 
 def stream_to_data(file_path: str, var_to_rs_map: Dict, var_to_rs_flipped: Dict, metadata: Dict) -> (List, Dict):
@@ -113,7 +100,7 @@ def filter_data_to_dict(data: List) -> Dict:
     return {d[0]: (d[1], d[2]) for d in data if d[2] >= N90 / 1.5}
 
 
-def save_to_file(data_path: str, ancestry: str, data: Dict, metadata: Dict) -> None:
+def save_to_file(data_path: str, ancestry: str, data: Dict, metadata: Dict) -> Dict:
     os.makedirs(f'{data_path}/sldsc/sumstats/', exist_ok=True)
     out_file = f'{data_path}/sldsc/sumstats/sldsc.sumstats.gz'
     with_data = 0
@@ -126,8 +113,7 @@ def save_to_file(data_path: str, ancestry: str, data: Dict, metadata: Dict) -> N
             else:
                 f.write(f'{rs_id}\t\t\n')
     metadata['counts']['final'] = with_data
-    with open(f'{data_path}/sldsc/sumstats/metadata', 'w') as f:
-        json.dump(metadata, f)
+    return metadata
 
 
 def ld_rs_iter(ancestry: str) -> str:
@@ -139,14 +125,7 @@ def ld_rs_iter(ancestry: str) -> str:
                 yield line.strip().split('\t')[1]
 
 
-def main():
-    check_envvars()
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dir', default=None, required=True, type=str)
-    parser.add_argument('--method', default=None, required=True, type=str)
-    data_path = parser.parse_args().dir
-
-    metadata = get_metadata(data_path)
+def sumstats(data_path: str, metadata: Dict) -> Dict:
     file = metadata['file']
     ancestry = metadata['ancestry']
     genome_build = metadata['genome_build']
@@ -158,8 +137,5 @@ def main():
     if len(data) > 0:
         data_dict = filter_data_to_dict(data)
         metadata['counts']['pass_filter'] = len(data_dict)
-        save_to_file(data_path, ancestry, data_dict, metadata)
-
-
-if __name__ == '__main__':
-    main()
+        metadata = save_to_file(data_path, ancestry, data_dict, metadata)
+    return metadata

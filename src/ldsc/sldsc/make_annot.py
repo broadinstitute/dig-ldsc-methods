@@ -2,7 +2,7 @@ import time
 import gzip
 import os
 import subprocess
-from typing import Iterator, List, Tuple
+from typing import Dict, Iterator, List, Tuple
 
 input_path = os.environ.get('INPUT_PATH')
 s3_path = os.environ.get('S3_BUCKET')
@@ -30,7 +30,9 @@ def get_annotation_data(data_path: str, file_chromosome: str) -> List[Tuple[int,
     data = []
     with open(annotation_path(data_path), 'r') as f:
         for line in f:
-            chromosome, start, end, _ = line.strip().split('\t', 3)
+            chromosome, start, end = line.strip().split('\t', 2)
+            if '\t' in end:
+                end, _ = end.split('\t', 1)
             if chromosome == file_chromosome:
                 data.append((int(start), int(end)))
     return data
@@ -50,8 +52,8 @@ def next_range(iter_range: Iterator[Tuple[int, int]], max_val: int):
 
 
 def write_annot(data_path: str, chromosome: str, range_data: List[Tuple[int, int]], g1000_data: List) -> None:
-    os.makedirs(f'{data_path}/sldsc/ld/', exist_ok=True)
-    out_file = f'{data_path}/sldsc/ld/ld.{chromosome}.annot.gz'
+    os.makedirs(f'{data_path}/sldsc/annot-ld/', exist_ok=True)
+    out_file = f'{data_path}/sldsc/annot-ld/ld.{chromosome}.annot.gz'
     with gzip.open(out_file, 'wt') as f_out:
         f_out.write('ANNOT\n')
         iter_range = iter(range_data)
@@ -71,7 +73,9 @@ def run_chromosome(data_path: str, ancestry: str, chromosome: str) -> None:
     write_annot(data_path, chromosome, range_data, g1000_data)
 
 
-def annotation(data_path: str, ancestry: str) -> None:
+def annotation(data_path: str, metadata: Dict) -> None:
+    ancestry = metadata['ancestry']
+
     check_g1000(ancestry)
     tot_time = 0
     for chromosome in range(1, 23):
