@@ -114,8 +114,8 @@ def filter_data_to_dict(data: List) -> Dict:
 
 
 def save_to_file(data_path: str, ancestry: str, data: Dict, metadata: Dict) -> None:
-    os.makedirs(f'{data_path}/sumstats/', exist_ok=True)
-    out_file = f'{data_path}/sumstats/sldsc.sumstats.gz'
+    os.makedirs(f'{data_path}/sldsc/sumstats/', exist_ok=True)
+    out_file = f'{data_path}/sldsc/sumstats/sldsc.sumstats.gz'
     with_data = 0
     with gzip.open(out_file, 'wt') as f:
         f.write('SNP\tZ\tN\n')
@@ -126,7 +126,7 @@ def save_to_file(data_path: str, ancestry: str, data: Dict, metadata: Dict) -> N
             else:
                 f.write(f'{rs_id}\t\t\n')
     metadata['counts']['final'] = with_data
-    with open(f'{data_path}/sumstats/metadata', 'w') as f:
+    with open(f'{data_path}/sldsc/sumstats/metadata', 'w') as f:
         json.dump(metadata, f)
 
 

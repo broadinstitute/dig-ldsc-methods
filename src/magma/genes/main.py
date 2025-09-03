@@ -54,14 +54,14 @@ def check_g1000(ancestry: str) -> None:
 
 
 def get_metadata(data_path: str) -> Dict:
-    with open(f'{data_path}/sumstats/metadata', 'r') as f:
+    with open(f'{data_path}/magma/sumstats/metadata', 'r') as f:
         metadata = json.load(f)
     return metadata
 
 
 def unzip_sumstats(data_path: str) -> None:
-    with gzip.open(f'{data_path}/sumstats/magma.sumstats.csv.gz', 'rb') as f_in:
-        with open(f'{data_path}/sumstats/magma.sumstats.csv', 'wb') as f_out:
+    with gzip.open(f'{data_path}/magma/sumstats/magma.sumstats.csv.gz', 'rb') as f_in:
+        with open(f'{data_path}/magma/sumstats/magma.sumstats.csv', 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
 
 
@@ -111,9 +111,9 @@ def main() -> None:
     os.makedirs(f'{data_path}/genes', exist_ok=True)
     subprocess.check_call(f'{input_path}/inputs/magma/magma '
                           f'--bfile {input_path}/inputs/g1000/EUR/g1000_{ancestry} '
-                          f'--pval {data_path}/sumstats/magma.sumstats.csv ncol=N '
+                          f'--pval {data_path}/magma/sumstats/magma.sumstats.csv ncol=N '
                           f'--gene-annot {input_path}/inputs/all.genes.annot '
-                          f'--out {data_path}/genes/associations', shell=True)
+                          f'--out {data_path}/magma/genes/associations', shell=True)
     convert(data_path)
 
 

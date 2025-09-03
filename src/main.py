@@ -7,34 +7,46 @@ s3_bucket = os.environ['S3_BUCKET']
 input_path = os.environ['INPUT_PATH']
 
 
-def get_input_output_method(method: str) -> (str, str, str):
+def get_upload_method(method: str) -> (str, str):
     return {
-        'sumstats': ('genetic', 'sldsc', 'sumstats'),
-        'sldsc': ('genetic', 'sldsc', 'sldsc'),
-        'magma-sumstats': ('genetic', 'magma', 'sumstats'),
-        'magma-genes': ('genetic', 'magma', 'genes')
+        'sumstats': ('genetic', 'sldsc/sumstats'),
+        'sldsc': ('genetic', 'sldsc/sldsc'),
+        'magma-sumstats': ('genetic', 'magma/sumstats'),
+        'magma-genes': ('genetic', 'magma/genes'),
+        'annot-ld': ('annotation', 'sldsc/ld')
     }[method]
 
 
-def download_raw(username: str, dataset: str, tmp_dir: str) -> None:
-    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/raw/'
-    subprocess.check_call(f'aws s3 cp "{path}" {tmp_dir}/raw/ --recursive', shell=True)
+def get_download_method(method: str) -> (str, str):
+    return {
+        'sumstats': ('genetic', 'raw'),
+        'sldsc': ('genetic', 'sldsc/sumstats'),
+        'magma-sumstats': ('genetic', 'raw'),
+        'magma-genes': ('genetic', 'magma/sumstats'),
+        'annot-ld': ('annotation', 'raw')
+    }[method]
 
 
-def download_sumstats(username: str, dataset: str, tmp_dir: str) -> None:
-    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/sldsc/sumstats/'
-    subprocess.check_call(f'aws s3 cp "{path}" {tmp_dir}/sumstats/ --recursive', shell=True)
+def get_cwd(method: str) -> str:
+    return {
+        'sumstats': 'ldsc/sumstats/',
+        'sldsc': 'ldsc/sldsc/',
+        'magma-sumstats': 'magma/sumstats/',
+        'magma-genes': 'magma/genes/',
+        'annot-ld': 'ldsc/ld/'
+    }[method]
 
 
-def download_magma_sumstats(username: str, dataset: str, tmp_dir: str) -> None:
-    path = f'{s3_bucket}/userdata/{username}/genetic/{dataset}/magma/sumstats/'
-    subprocess.check_call(f'aws s3 cp "{path}" {tmp_dir}/sumstats/ --recursive', shell=True)
+def download(username: str, dataset: str, tmp_dir: str, method: str) -> None:
+    dataset_type, download_type = get_download_method(method)
+    path = f'{s3_bucket}/userdata/{username}/{dataset_type}/{dataset}/{download_type}/'
+    subprocess.check_call(f'aws s3 cp "{path}" {tmp_dir}/{download_type}/ --recursive', shell=True)
 
 
 def upload(username: str, dataset: str, tmp_dir: str, method: str) -> None:
-    input_type, output_group, output_method = get_input_output_method(method)
-    path = f'{s3_bucket}/userdata/{username}/{input_type}/{dataset}/{output_group}/{output_method}'
-    subprocess.check_call(f'aws s3 cp {tmp_dir}/{output_method}/ "{path}" --recursive', shell=True)
+    dataset_type, upload_type = get_upload_method(method)
+    path = f'{s3_bucket}/userdata/{username}/{dataset_type}/{dataset}/{upload_type}'
+    subprocess.check_call(f'aws s3 cp {tmp_dir}/{upload_type}/ "{path}" --recursive', shell=True)
 
 
 def main():
@@ -45,23 +57,9 @@ def main():
     args = parser.parse_args()
 
     tmp = tempfile.TemporaryDirectory()
-    print(f'Using temporary directory {tmp.name}')
-    if args.method == 'sumstats':
-        download_raw(args.username, args.dataset, tmp.name)
-        subprocess.check_call(['python3.8', 'main.py', f'--dir={tmp.name}'], cwd='ldsc/sumstats/')
-        upload(args.username, args.dataset, tmp.name, args.method)
-    if args.method == 'sldsc':
-        download_sumstats(args.username, args.dataset, tmp.name)
-        subprocess.check_call(['python3.8', 'main.py', f'--dir={tmp.name}'], cwd='ldsc/sldsc/')
-        upload(args.username, args.dataset, tmp.name, args.method)
-    if args.method == 'magma-sumstats':
-        download_raw(args.username, args.dataset, tmp.name)
-        subprocess.check_call(['python3.8', 'main.py', f'--dir={tmp.name}'], cwd='magma/sumstats/')
-        upload(args.username, args.dataset, tmp.name, args.method)
-    if args.method == 'magma-genes':
-        download_magma_sumstats(args.username, args.dataset, tmp.name)
-        subprocess.check_call(['python3.8', 'main.py', f'--dir={tmp.name}'], cwd='magma/genes/')
-        upload(args.username, args.dataset, tmp.name, args.method)
+    download(args.username, args.dataset, tmp.name, args.method)
+    subprocess.check_call(['python3.8', 'main.py', f'--dir={tmp.name}'], cwd=get_cwd(args.method))
+    upload(args.username, args.dataset, tmp.name, args.method)
 
 
 if __name__ == '__main__':

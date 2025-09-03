@@ -81,13 +81,13 @@ def stream_to_data(file_path: str, rs_map: Dict, metadata: Dict) -> (List, Dict)
 
 
 def save_to_file(data_path: str, data: List, metadata: Dict) -> None:
-    os.makedirs(f'{data_path}/sumstats/', exist_ok=True)
-    out_file = f'{data_path}/sumstats/magma.sumstats.csv.gz'
+    os.makedirs(f'{data_path}/magma/sumstats/', exist_ok=True)
+    out_file = f'{data_path}/magma/sumstats/magma.sumstats.csv.gz'
     with gzip.open(out_file, 'wt') as f:
         f.write('SNP\tP\tN\n')
         for rs_id, p, n in data:
             f.write('{}\t{}\t{}\n'.format(rs_id, p, n))
-    with open(f'{data_path}/sumstats/metadata', 'w') as f:
+    with open(f'{data_path}/magma/sumstats/metadata', 'w') as f:
         json.dump(metadata, f)
 
 
