@@ -55,16 +55,16 @@ def stream_to_data(file_path: str, rs_map: Dict, metadata: Dict) -> (List, Dict)
         for json_string in f_in:
             line = dict(zip(header, json_string.strip().split(separator)))
             counts['all'] += 1
-            if valid_line(line, col_map, effective_n):
-                chromosome, position = (line[col_map[c]] for c in var_id_columns)
-                if (chromosome, position) in rs_map:
-                    rs_id = rs_map[(chromosome, position)]
-                    try:
+            try:
+                if valid_line(line, col_map, effective_n):
+                    chromosome, position = (line[col_map[c]] for c in var_id_columns)
+                    if (chromosome, position) in rs_map:
+                        rs_id = rs_map[(chromosome, position)]
                         p_value = float(line[col_map['pValue']])
                         n = get_n(line, col_map, effective_n)
                         out.append((rs_id, p_value, n))
-                    except ValueError:  # pValue, beta, or n not a value that can be converted to a float, skip
-                        counts['error'] += 1
+            except ValueError:  # pValue, beta, or n not a value that can be converted to a float, skip
+                counts['error'] += 1
     counts['final'] = len(out)
     return out, counts
 
