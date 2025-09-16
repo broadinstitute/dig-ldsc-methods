@@ -77,20 +77,20 @@ def stream_to_data(file_path: str, var_to_rs_map: Dict, var_to_rs_flipped: Dict,
         for json_string in f_in:
             line = dict(zip(header, json_string.strip().split(separator)))
             counts['all'] += 1
-            if valid_line(line, col_map, effective_n):
-                chromosome, position, reference, alt = (line[col_map[c]] for c in var_id_columns)
-                var_id = f'{chromosome}:{position}:{reference.upper()}:{alt.upper()}'
-                if var_id in var_to_rs_map or var_id in var_to_rs_flipped:
-                    flipped = var_id in var_to_rs_flipped
-                    rs_id = var_to_rs_flipped[var_id] if flipped else var_to_rs_map[var_id]
-                    try:
+            try:
+                if valid_line(line, col_map, effective_n):
+                    chromosome, position, reference, alt = (line[col_map[c]] for c in var_id_columns)
+                    var_id = f'{chromosome}:{position}:{reference.upper()}:{alt.upper()}'
+                    if var_id in var_to_rs_map or var_id in var_to_rs_flipped:
+                        flipped = var_id in var_to_rs_flipped
+                        rs_id = var_to_rs_flipped[var_id] if flipped else var_to_rs_map[var_id]
                         p_value = float(line[col_map['pValue']])
                         beta = get_beta(line, col_map) * (1 - 2 * flipped)
                         n = get_n(line, col_map, effective_n)
                         out.append((rs_id, p_to_z(p_value, beta), n))
                         counts['flipped'] += flipped
-                    except ValueError:  # pValue, beta, or n not a value that can be converted to a float, skip
-                        counts['error'] += 1
+            except ValueError:  # pValue, beta, or n not a value that can be converted to a float, skip
+                counts['error'] += 1
     counts['translated'] = len(out)
     return out, counts
 
