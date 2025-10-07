@@ -7,6 +7,8 @@ from typing import Dict, Iterator, List, Tuple
 input_path = os.environ.get('INPUT_PATH')
 s3_path = os.environ.get('S3_BUCKET')
 
+GENE_WINDOW = 50000
+
 def check_envvars() -> None:
     assert input_path is not None
     assert s3_path is not None
@@ -22,20 +24,60 @@ def check_g1000(ancestry: str) -> None:
         subprocess.check_call(cmd, shell=True)
 
 
-def annotation_path(data_path: str) -> str:
-    return f'{data_path}/raw/annotation.tsv'
+def gene_loc_path() -> str:
+    return f'{input_path}/gene_loc/gene.loc'
 
 
-def get_annotation_data(data_path: str, file_chromosome: str) -> List[Tuple[int, int]]:
-    data = []
-    with open(annotation_path(data_path), 'r') as f:
+def check_gene_loc() -> None:
+    if not os.path.exists(gene_loc_path()):
+        cmd = f'./bootstrap/gene_loc.bootstrap.sh {s3_path} {input_path}'
+        subprocess.check_call(cmd, shell=True)
+
+
+def annotation_path(data_path: str, file: str) -> str:
+    return f'{data_path}/raw/{file}'
+
+
+def get_gene_loc_map():
+    gene_loc_map = {}
+    with open(gene_loc_path(), 'r') as f:
         for line in f:
-            chromosome, start, end = line.strip().split('\t', 2)
-            if '\t' in end:
-                end, _ = end.split('\t', 1)
-            if chromosome == file_chromosome:
-                data.append((int(start), int(end)))
-    return data
+            gene, chromosome, start, end = line.strip().split('\t')
+            gene_loc_map[gene] = (chromosome, int(start), int(end))
+    return gene_loc_map
+
+
+def convert_gene_list_to_bed_file(data_path: str, file: str) -> str:
+    gene_loc_map = get_gene_loc_map()
+    with open(annotation_path(data_path, 'gene_list.bed'), 'w') as f_out:
+        with open(annotation_path(data_path, file), 'r') as f:
+            for line in f:
+                gene = line.strip()
+                if gene in gene_loc_map:
+                    chromosome, start, end = gene_loc_map[gene]
+                    f_out.write('{}\t{}\t{}\n'.format(
+                        chromosome,
+                        max(start - GENE_WINDOW, 1),
+                        end + GENE_WINDOW
+                    ))
+    return 'gene_list.bed'
+
+
+def get_annotation_data(data_path: str, file: str, file_chromosome: str) -> List[Tuple[int, int]]:
+    data = []
+    with open(annotation_path(data_path, file), 'r') as f:
+        for line in f:
+            split_line = line.strip().split('\t')
+            if len(split_line) >= 3:
+                chromosome, start, end = split_line[:3]
+                if 'chr' in chromosome:
+                    chromosome = chromosome.replace('chr', '')
+                if chromosome == file_chromosome:
+                    try:
+                        data.append((int(start), int(end)))
+                    except:
+                        pass
+    return sorted(data)
 
 
 def get_g1000_data(ancestry: str, chromosome: str) -> List[int]:
@@ -67,20 +109,26 @@ def write_annot(data_path: str, chromosome: str, range_data: List[Tuple[int, int
                 f_out.write('0\n')
 
 
-def run_chromosome(data_path: str, ancestry: str, chromosome: str) -> None:
-    range_data = get_annotation_data(data_path, chromosome)
+def run_chromosome(data_path: str, file: str, ancestry: str, chromosome: str) -> None:
+    range_data = get_annotation_data(data_path, file, chromosome)
     g1000_data = get_g1000_data(ancestry, chromosome)
     write_annot(data_path, chromosome, range_data, g1000_data)
 
 
 def annotation(data_path: str, metadata: Dict) -> None:
     ancestry = metadata['ancestry']
+    file = metadata['file']
+    file_type = metadata['file_type']
+
+    if file_type == 'gene_list':
+        check_gene_loc()
+        file = convert_gene_list_to_bed_file(data_path, file)
 
     check_g1000(ancestry)
     tot_time = 0
     for chromosome in range(1, 23):
         t = time.time()
-        run_chromosome(data_path, ancestry, str(chromosome))
+        run_chromosome(data_path, file, ancestry, str(chromosome))
         print(f'Chromosome Run Time ({chromosome}): {time.time() - t}')
         tot_time += time.time() - t
     print(f'Full Annotation Run Time: {tot_time}')
