@@ -18,6 +18,12 @@
       "download_from": "raw",
       "upload_to": "magma/genes"
     },
+    "magma-gene-list": {
+      "cwd": "magma/genes",
+      "dataset_type": "annotation",
+      "download_from": "raw",
+      "upload_to": "magma/gene_list"
+    },
     "annot-sldsc": {
       "cwd": "ldsc/sldsc",
       "dataset_type": "annotation",
