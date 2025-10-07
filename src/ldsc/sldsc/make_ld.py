@@ -111,7 +111,7 @@ def get_LR(x_cm: List[float], y_cm: List[float], window_cm: float=1.0) -> List[T
     while idx < len(x_cm):
         while right_idx < len(y_cm) and y_cm[right_idx] - x_cm[idx] <= window_cm:
             right_idx += 1
-        while x_cm[idx] - y_cm[left_idx] > window_cm:
+        while left_idx < len(y_cm) and x_cm[idx] - y_cm[left_idx] > window_cm:
             left_idx += 1
         lr.append((left_idx, right_idx - 1))
         idx += 1
@@ -123,38 +123,43 @@ def run_chromosome(data_path: str, ancestry: str, chromosome: str) -> None:
     hm3_idxs, all_cm, rsids = get_bim_data(ancestry, chromosome)
     annot = get_annotation(data_path, chromosome)
 
-    X = get_X(ancestry, chromosome, bed_width, hm3_idxs)[:, :num_people]
-    Y = get_X(ancestry, chromosome, bed_width, annot)[:, :num_people]
+    if len(annot) > 0:
+        X = get_X(ancestry, chromosome, bed_width, hm3_idxs)[:, :num_people]
+        Y = get_X(ancestry, chromosome, bed_width, annot)[:, :num_people]
 
-    # Filter out fully heterogeneous SNPs
-    X_filter = np.sum(X == 1, 1) != num_people
-    if sum(X_filter) < X.shape[0]:
-        raise Exception('X filter cannot be triggered')
+        # Filter out fully heterogeneous SNPs
+        X_filter = np.sum(X == 1, 1) != num_people
+        if sum(X_filter) < X.shape[0]:
+            raise Exception('X filter cannot be triggered')
 
-    Y_filter = np.sum(Y == 1, 1) != num_people
-    annot = [a for i, a in enumerate(annot) if Y_filter[i]]
-    Y = Y[Y_filter, :]
+        Y_filter = np.sum(Y == 1, 1) != num_people
+        annot = [a for i, a in enumerate(annot) if Y_filter[i]]
+        Y = Y[Y_filter, :]
 
-    # This is used for the M_5_50 calculation
-    AF = np.sum(Y, 1) / 2 / num_people
-    MAF = np.minimum(AF, np.ones(Y.shape[0]) - AF)
-    M = Y.shape[0]
-    M_5 = np.sum(MAF > 0.05)
+        # This is used for the M_5_50 calculation
+        AF = np.sum(Y, 1) / 2 / num_people
+        MAF = np.minimum(AF, np.ones(Y.shape[0]) - AF)
+        M = Y.shape[0]
+        M_5 = np.sum(MAF > 0.05)
 
-    X = normalize_X(X)
-    Y = normalize_X(Y)
+        X = normalize_X(X)
+        Y = normalize_X(Y)
 
-    # This gets left-right bounds for matrix Y per hapmap3 SNP in the g1000 dataset
-    x_cm = np.array(all_cm)[hm3_idxs]
-    y_cm = np.array(all_cm)[annot]
-    lr = get_LR(x_cm, y_cm)
+        # This gets left-right bounds for matrix Y per hapmap3 SNP in the g1000 dataset
+        x_cm = np.array(all_cm)[hm3_idxs]
+        y_cm = np.array(all_cm)[annot]
+        lr = get_LR(x_cm, y_cm)
 
-    l2s = []
-    for i, (left_idx, right_idx) in enumerate(lr):
-        # LD Score calculation for SNP i
-        v = Y[left_idx:right_idx + 1, :].dot(X[i, :]) / num_people
-        # L2 adjustment
-        l2s.append(((num_people - 1) * v.dot(v) - len(v)) / (num_people - 2))
+        l2s = []
+        for i, (left_idx, right_idx) in enumerate(lr):
+            # LD Score calculation for SNP i
+            v = Y[left_idx:right_idx + 1, :].dot(X[i, :]) / num_people
+            # L2 adjustment
+            l2s.append(((num_people - 1) * v.dot(v) - len(v)) / (num_people - 2))
+    else:
+        l2s = [0.0] * len(hm3_idxs)
+        M = 0
+        M_5 = 0
 
     write_output(data_path, chromosome, l2s, rsids, M, M_5)
 
