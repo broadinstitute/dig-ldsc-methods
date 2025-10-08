@@ -80,7 +80,7 @@ Resources:
   LDSCMethodsJobQueue:
     Type: 'AWS::Batch::JobQueue'
     Properties:
-      JobQueueName: 'ldsc-methods-job-queue'
+      JobQueueName: 'sldsc-methods-job-queue'
       ComputeEnvironmentOrder:
         - Order: 1
           ComputeEnvironment: !Ref LDSCMethodsComputeEnv
@@ -91,7 +91,7 @@ Resources:
     Type: 'AWS::Batch::JobDefinition'
     Properties:
       Type: 'container'
-      JobDefinitionName: 'dig-ldsc-methods'
+      JobDefinitionName: 'dig-sldsc-methods'
       PlatformCapabilities:
         - 'FARGATE'
       Timeout:
