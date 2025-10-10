@@ -27,6 +27,11 @@ def check_frq(ancestry: str) -> None:
         subprocess.check_call(cmd, shell=True)
 
 
+def check_phenotype_map() -> None:
+    if not os.path.exists(annot_inputs.phenotype_map_path(input_path)):
+        subprocess.check_call(f'./bootstrap/phenotype_map.bootstrap.sh {s3_path} {input_path}', shell=True)
+
+
 def save_data(output: Dict, data_path: str) -> None:
     os.makedirs(f'{data_path}/sldsc/annot-sldsc/', exist_ok=True)
     for variable_type, data in output.items():
@@ -41,6 +46,9 @@ def annot_sldsc(data_path: str, metadata: Dict) -> Dict:
 
     check_inputs(ancestry)
     check_frq(ancestry)
+    check_phenotype_map()
+
+    phenotype_map = annot_inputs.get_phenotype_map(input_path)
 
     overlap_matrix = annot_inputs.get_overlap(input_path, data_path, ancestry)
     total_snps = overlap_matrix[0][0]
@@ -77,7 +85,7 @@ def annot_sldsc(data_path: str, metadata: Dict) -> Dict:
             variable_type, variable_name = variable.split('___')
             if variable_type not in output:
                 output[variable_type] = []
-            line = f'{phenotype}\t{ancestry}\t{variable_name}\t{value["enrichment"]}\t{value["pValue"]}\n'
+            line = f'{phenotype_map.get(phenotype, phenotype)}\t{ancestry}\t{variable_name}\t{value["enrichment"]}\t{value["pValue"]}\n'
             output[variable_type].append(line)
             if variable_type == 'custom':
                 print(i, line.strip())

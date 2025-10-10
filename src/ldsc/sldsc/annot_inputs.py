@@ -2,7 +2,7 @@ import gzip
 import numpy as np
 from numpy import typing as npt
 import re
-from typing import List
+from typing import Dict, List
 from zipfile import ZipFile
 
 import annotation
@@ -52,6 +52,10 @@ def y_path(phenotype: str) -> str:
 
 def idxs_path(phenotype: str) -> str:
     return f'phenotypes/{phenotype}/idxs.npy'
+
+
+def phenotype_map_path(data_path: str) -> str:
+    return f'{data_path}/phenotype_map/phenotype_map.tsv'
 
 
 def get_all_phenotypes(data_path: str, ancestry: str) -> List[str]:
@@ -118,3 +122,11 @@ def get_overlap(input_path: str, data_path: str, ancestry: str) -> npt.NDArray:
                     out.append(list(map(float, values)))
     np_array = np.hstack((baseline_annot, np.array(out)))
     return np_array.T.dot(np_array)
+
+def get_phenotype_map(input_path: str) -> Dict[str, str]:
+    out = {}
+    with open(phenotype_map_path(input_path), 'r') as f:
+        for line in f:
+            phenotype, name = line.strip().split('\t')
+            out[phenotype] = name
+    return out
