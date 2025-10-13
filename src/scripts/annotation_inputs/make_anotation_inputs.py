@@ -69,6 +69,10 @@ def main():
     ancestry = 'EUR'
     heritability_z = get_heritability('EU')
 
+    os.makedirs(f'inputs/{ancestry}', exist_ok=True)
+    with open(f'inputs/{ancestry}/version', 'w') as f:
+        f.write('1.0.0')
+
     os.makedirs(f'inputs/{ancestry}/baseline', exist_ok=True)
     baseline_annot = get_baseline_annot(ancestry)
     baseline_ld = get_baseline_ld_score(ancestry)
@@ -86,7 +90,7 @@ def main():
     for i, data_path in enumerate(glob.glob(f'sumstats/{ancestry}/*.sumstats.gz')):
         phenotype = re.findall(r'.*/([^/]*).sumstats.gz', data_path)[0].rsplit('_', 1)[0]
         print(phenotype, f'{i} / {total_files}', heritability_z.get(phenotype, 0.0))
-        if heritability_z.get(phenotype, 0.0) > 7:
+        if heritability_z.get(phenotype, 0.0) >= 6:
             os.makedirs(f'inputs/{ancestry}/phenotypes/{phenotype}', exist_ok=True)
             chisq, sample_size, idxs = sumstats.load_sumstats_from(data_path)
             chisq, sample_size, idxs = sumstats.filter_sumstats(chisq, sample_size, idxs)
