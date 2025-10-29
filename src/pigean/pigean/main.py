@@ -34,7 +34,7 @@ def main() -> None:
 
     metadata = get_metadata(data_path)
     metadata['input_type'] = 'sumstats'
-    metadata['model'] = 'text_mining'
+    metadata['model'] = 'small'
 
     metadata = sumstats.main(data_path, metadata)
     if metadata['counts']['translated'] > 0:

@@ -117,7 +117,7 @@ def make_option(value: str) -> str:
     return value if value != 'NA' else 'null'
 
 
-def translate_gene_stats(json_line, model) -> str:
+def translate_gene_stats(json_line: Dict, model: str) -> str:
     combined = make_option(json_line["combined"])
     huge_score = json_line["huge_score_gwas"] if 'huge_score_gwas' in json_line else json_line["positive_control"]
     if combined != 'null':
@@ -130,7 +130,7 @@ def translate_gene_stats(json_line, model) -> str:
                f'"model": "{model}"}}\n'
 
 
-def translate_gene_set_stats(json_line, model):
+def translate_gene_set_stats(json_line: Dict, model: str):
     beta = make_option(json_line["beta"])
     beta_uncorrected = make_option(json_line["beta_uncorrected"])
     if beta != 'null' and beta_uncorrected != 'null' and float(beta_uncorrected) != 0.0:
@@ -175,6 +175,17 @@ def get_translate_gene_gene_set_stats(data_path: str) -> Callable[[Dict, str], s
                    f'"model": "{model}"}}\n'
     return translate_gene_gene_set_stats
 
+def translate_gene_effector(json_line: Dict, model: str) -> str:
+    return f'{{"lead_locus": "{json_line["Lead_locus"]}", ' \
+           f'"p": "{json_line["P"]}", ' \
+           f'"gene": {json_line["Gene"]}, ' \
+           f'"cond_prob_total": {json_line["cond_prob_total"]}, ' \
+           f'"cond_prob_signal": {json_line["cond_prob_signal"]}, ' \
+           f'"cond_prob_prior": {json_line["cond_prob_prior"]}, ' \
+           f'"cond_prob_huge": {json_line["cond_prob_huge"]}, ' \
+           f'"combined_D": {json_line["combined_D"]}, ' \
+           f'"model": "{model}"}}\n'
+
 
 def convert(data_path: str, output_type: str, translate_fnc: Callable[[Dict, str], str], model) -> None:
     if os.path.exists(f'{data_path}/pigean/pigean/{output_type}.out'):
@@ -193,4 +204,5 @@ def main(data_path: str, metadata: Dict) -> Dict:
     convert(data_path, 'gene_stats', translate_gene_stats, metadata['model'])
     convert(data_path, 'gene_set_stats', translate_gene_set_stats, metadata['model'])
     convert(data_path, 'gene_gene_set_stats', get_translate_gene_gene_set_stats(data_path), metadata['model'])
+    convert(data_path, 'gene_effector', translate_gene_effector, metadata['model'])
     return metadata
