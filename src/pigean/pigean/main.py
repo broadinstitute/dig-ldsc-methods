@@ -34,7 +34,7 @@ def main() -> None:
 
     metadata = get_metadata(data_path)
     metadata['input_type'] = 'sumstats'
-    metadata['model'] = 'small'
+    metadata['model'] = 'mouse_msigdb'
 
     metadata = sumstats.main(data_path, metadata)
     if metadata['counts']['translated'] > 0:
