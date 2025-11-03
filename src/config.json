@@ -23,6 +23,12 @@
       "dataset_type": "annotation",
       "download_from": "raw",
       "upload_to": "sldsc/annot-sldsc"
+    },
+    "pigean": {
+      "cwd": "pigean/pigean",
+      "dataset_type": "genetic",
+      "download_from": "raw",
+      "upload_to": "pigean/pigean"
     }
   }
 }
