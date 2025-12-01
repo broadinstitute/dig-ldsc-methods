@@ -3,7 +3,7 @@ import json
 import os
 from typing import Dict
 
-import genes, pathways, sumstats
+import genes, gene_lists, pathways, sumstats
 
 input_path = os.environ.get('INPUT_PATH')
 s3_path = os.environ.get('S3_BUCKET')
@@ -30,15 +30,21 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', default=None, required=True, type=str)
     parser.add_argument('--method', default=None, required=True, type=str)
-    data_path = parser.parse_args().dir
+
+    args = parser.parse_args()
+    data_path = args.dir
+    method = args.method
 
     metadata = get_metadata(data_path)
 
-    metadata = sumstats.main(data_path, metadata)
-    if metadata['counts']['final'] > 0:
-        genes.main(data_path, metadata)
-        pathways.main(data_path)
-    save_metadata(data_path, metadata)
+    if method == 'magma':
+        metadata = sumstats.main(data_path, metadata)
+        if metadata['counts']['final'] > 0:
+            genes.main(data_path, metadata)
+            pathways.main(data_path)
+        save_metadata(data_path, metadata)
+    elif method == 'magma-gene-list':
+        gene_lists.main(data_path, metadata)
 
 
 if __name__ == '__main__':
