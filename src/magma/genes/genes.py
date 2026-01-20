@@ -84,7 +84,7 @@ def main(data_path: str, metadata: Dict) -> None:
 
     os.makedirs(f'{data_path}/magma/genes', exist_ok=True)
     subprocess.check_call(f'{input_path}/inputs/magma/magma '
-                          f'--bfile {input_path}/inputs/g1000/EUR/g1000_{ancestry} '
+                          f'--bfile {input_path}/inputs/g1000/{ancestry}/g1000_{ancestry} '
                           f'--pval {data_path}/magma/sumstats/magma.sumstats.csv ncol=N '
                           f'--gene-annot {input_path}/inputs/all.genes.annot '
                           f'--out {data_path}/magma/genes/associations', shell=True)
