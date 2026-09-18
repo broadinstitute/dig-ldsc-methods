@@ -7,6 +7,17 @@ input_path = os.environ.get('INPUT_PATH')
 s3_path = os.environ.get('S3_BUCKET')
 
 
+def open_text(path: str):
+    """Open an uploaded GWAS file for reading whether or not it is gzipped.
+
+    The upload UI accepts both and the stored metadata does not say which
+    was sent, so sniff the gzip magic bytes rather than trusting the name.
+    """
+    with open(path, 'rb') as f:
+        is_gzip = f.read(2) == b'\x1f\x8b'
+    return gzip.open(path, 'rt') if is_gzip else open(path, 'r')
+
+
 def get_p_value(line: Dict, col_map: Dict) -> float:
     return float(line[col_map['pValue']])
 
@@ -33,7 +44,7 @@ def stream_to_sumstats(data_path: str, file: str, metadata: Dict) -> Dict:
     separator = metadata['separator']
     with gzip.open(f'{data_path}/pigean/sumstats/pigean.sumstats.gz', 'wt') as f_out:
         f_out.write('CHROM\tPOS\tP\tN\n')
-        with gzip.open(f'{data_path}/raw/{file}', 'rt') as f_in:
+        with open_text(f'{data_path}/raw/{file}') as f_in:
             header = f_in.readline().strip().split(separator)
             for json_string in f_in:
                 line = dict(zip(header, json_string.strip().split(separator)))

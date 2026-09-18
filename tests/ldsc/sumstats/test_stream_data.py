@@ -126,3 +126,23 @@ def test_not_a_csv() -> None:
     assert count['error'] == 0
     assert count['flipped'] == 0
     assert count['translated'] == 0
+
+
+def make_plain_file(lines: List, sep: str = '\t') -> TemporaryDirectory:
+    tmp = TemporaryDirectory()
+    headers = get_header()
+    with open(f'{tmp.name}/test.tsv', 'w') as f:
+        f.write(f'{sep.join(headers)}\n')
+        for line in lines:
+            f.write(f'{sep.join([str(line[header]) for header in headers])}\n')
+    return tmp
+
+
+def test_uncompressed_file_is_read() -> None:
+    metadata = get_metadata('\t')
+    lines = valid_lines()
+    tmp = make_plain_file(lines)
+    out, count = stream_to_data(f'{tmp.name}/test.tsv', get_var_to_rs_map(), get_flipped_var_to_rs_map(), metadata)
+    assert count['all'] == 6
+    assert count['translated'] == 6
+    tmp.cleanup()
